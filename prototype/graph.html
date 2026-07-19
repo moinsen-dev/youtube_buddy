@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wissensgraph — YouTube Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Navigation -->
+    <nav class="app-nav" aria-label="Hauptnavigation">
+      <span class="nav-brand"><span class="brand-dot" aria-hidden="true"></span>YouTube Buddy</span>
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" href="#" title="Bibliothek (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v14"/></svg>
+        <span>Bibliothek</span>
+      </a>
+      <a class="nav-item" href="#" title="Suche (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Suche</span>
+      </a>
+      <a class="nav-item" href="knowledge.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Wissen</span>
+      </a>
+      <a class="nav-item" href="#" title="Mehr (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>Mehr</span>
+      </a>
+    </nav>
+
+    <main class="app-content">
+
+      <header class="app-header">
+        <a class="back-link" href="knowledge.html">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+          <span>Wissen</span>
+        </a>
+      </header>
+
+      <h1 class="text-title-1" style="margin-bottom: var(--space-4)">Wissensgraph</h1>
+
+      <!-- Filter (statisch) -->
+      <div class="filter-chips" role="group" aria-label="Filter nach Typ">
+        <a class="filter-chip active" href="#" aria-pressed="true">Alle</a>
+        <a class="filter-chip" href="#">Konzepte</a>
+        <a class="filter-chip" href="#">Videos</a>
+      </div>
+
+      <!-- Graph (statisches SVG, Pan/Zoom nicht Teil des Prototyps) -->
+      <div class="graph-panel">
+        <svg class="graph-canvas" viewBox="0 0 640 400" role="img" aria-label="Wissensgraph: Konzept Tiefschlaf verbunden mit Koffein, Morgenlicht, Video Schlaf optimieren und Notiz Summary Schlaf; Konzept Gusseisen-Pflege verbunden mit Video Pfanne einbrennen">
+
+          <!-- Kanten: Tiefschlaf-Cluster -->
+          <line class="graph-edge" x1="250" y1="180" x2="110" y2="80"/>
+          <line class="graph-edge" x1="250" y1="180" x2="400" y2="80"/>
+          <line class="graph-edge" x1="250" y1="180" x2="140" y2="320"/>
+          <line class="graph-edge" x1="250" y1="180" x2="380" y2="320"/>
+          <!-- Kante: Gusseisen-Cluster -->
+          <line class="graph-edge" x1="540" y1="180" x2="540" y2="300"/>
+
+          <!-- Nodes: Konzepte (amber) -->
+          <a href="note.html" aria-label="Konzept Tiefschlaf öffnen">
+            <circle class="node-concept" cx="250" cy="180" r="26"/>
+            <text class="node-label" x="250" y="228">Tiefschlaf</text>
+            <text class="node-sublabel" x="250" y="243">Konzept · 6 Quellen</text>
+          </a>
+          <a href="note.html" aria-label="Konzept Koffein öffnen">
+            <circle class="node-concept" cx="110" cy="80" r="18"/>
+            <text class="node-label" x="110" y="50">Koffein</text>
+          </a>
+          <a href="note.html" aria-label="Konzept Morgenlicht öffnen">
+            <circle class="node-concept" cx="400" cy="80" r="18"/>
+            <text class="node-label" x="400" y="50">Morgenlicht</text>
+          </a>
+          <a href="note.html" aria-label="Konzept Gusseisen-Pflege öffnen">
+            <circle class="node-concept" cx="540" cy="180" r="18"/>
+            <text class="node-label" x="540" y="150">Gusseisen-Pflege</text>
+          </a>
+
+          <!-- Node: Notiz (info) -->
+          <a href="note.html" aria-label="Notiz Summary Schlaf öffnen">
+            <circle class="node-note" cx="380" cy="320" r="16"/>
+            <text class="node-label" x="380" y="352">Summary: Schlaf</text>
+          </a>
+
+          <!-- Nodes: Videos (grau) -->
+          <a href="video.html" aria-label="Video Schlaf optimieren öffnen">
+            <circle class="node-video" cx="140" cy="320" r="16"/>
+            <text class="node-label" x="140" y="352">🎬 Schlaf optimieren</text>
+          </a>
+          <a href="video.html" aria-label="Video Pfanne einbrennen öffnen">
+            <circle class="node-video" cx="540" cy="300" r="16"/>
+            <text class="node-label" x="540" y="332">🎬 Pfanne einbrennen</text>
+          </a>
+
+        </svg>
+
+        <!-- Legende -->
+        <div class="graph-legend">
+          <span class="legend-item"><span class="legend-dot concept" aria-hidden="true"></span>Konzept</span>
+          <span class="legend-item"><span class="legend-dot note" aria-hidden="true"></span>Notiz</span>
+          <span class="legend-item"><span class="legend-dot video" aria-hidden="true"></span>Video</span>
+        </div>
+      </div>
+
+      <p class="text-caption text-tertiary" style="margin-top: var(--space-4); text-align: center">
+        Pinch = Zoom · Tap = öffnen · vollständig lokal berechnet
+      </p>
+
+    </main>
+  </div>
+</body>
+</html>

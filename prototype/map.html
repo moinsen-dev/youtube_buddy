@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Japan in 14 Tagen — YouTube Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Navigation -->
+    <nav class="app-nav" aria-label="Hauptnavigation">
+      <span class="nav-brand"><span class="brand-dot" aria-hidden="true"></span>YouTube Buddy</span>
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" href="#" title="Bibliothek (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v14"/></svg>
+        <span>Bibliothek</span>
+      </a>
+      <a class="nav-item" href="#" title="Suche (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Suche</span>
+      </a>
+      <a class="nav-item" href="knowledge.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Wissen</span>
+      </a>
+      <a class="nav-item" href="#" title="Mehr (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>Mehr</span>
+      </a>
+    </nav>
+
+    <main class="app-content">
+
+      <header class="app-header">
+        <a class="back-link" href="video.html">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+          <span>Video</span>
+        </a>
+        <span class="on-device-badge"><span class="dot" aria-hidden="true"></span>Extraktion: On-Device</span>
+      </header>
+
+      <h1 class="text-title-1" style="margin-bottom: var(--space-6)">Japan in 14 Tagen</h1>
+
+      <!-- MapView-Card -->
+      <section class="map-card" aria-labelledby="map-head">
+        <h2 class="section-title" id="map-head" style="position:absolute;left:-9999px">Karte mit Route</h2>
+
+        <!-- Karten-Platzhalter: stilisierte Landmasse + Route -->
+        <svg class="map-canvas" viewBox="0 0 640 360" role="img" aria-label="Stilisierte Karte von Japan mit Route Tokyo, Hakone, Kyoto, Nara">
+          <!-- Hintergrund: Wasser -->
+          <rect width="640" height="360" fill="#0F1115"/>
+
+          <!-- Grid -->
+          <g stroke="#1E242E" stroke-width="1">
+            <path d="M0 60h640M0 120h640M0 180h640M0 240h640M0 300h640"/>
+            <path d="M80 0v360M160 0v360M240 0v360M320 0v360M400 0v360M480 0v360M560 0v360"/>
+          </g>
+
+          <!-- Stilisierte Landmasse (Honshu-Silhouette, angedeutet) -->
+          <path d="M120 90 Q 200 60 290 85 Q 360 105 420 140 Q 470 170 500 210 Q 520 245 505 265 Q 470 285 430 265 Q 380 240 340 220 Q 290 250 240 235 Q 190 220 170 185 Q 140 160 120 130 Q 105 108 120 90 Z"
+                fill="#161A21" stroke="#262D38" stroke-width="1.5"/>
+          <path d="M300 285 Q 340 275 375 290 Q 390 300 380 315 Q 345 330 310 320 Q 285 310 300 285 Z"
+                fill="#161A21" stroke="#262D38" stroke-width="1.5"/>
+
+          <!-- Route: Tokyo → Hakone → Kyoto → Nara (Polyline, info) -->
+          <polyline points="460,150 380,205 250,225 215,255"
+                    fill="none" stroke="#4A9DFF" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 0"/>
+
+          <!-- Pins ①–④ (accent) -->
+          <g font-family="system-ui, sans-serif" font-size="14" font-weight="700" text-anchor="middle">
+            <g>
+              <circle cx="460" cy="150" r="14" fill="#F59E0B"/>
+              <text x="460" y="155" fill="#1A1205">1</text>
+              <text x="460" y="132" fill="#F2F4F7" font-size="12" font-weight="600">Tokyo</text>
+            </g>
+            <g>
+              <circle cx="380" cy="205" r="14" fill="#F59E0B"/>
+              <text x="380" y="210" fill="#1A1205">2</text>
+              <text x="380" y="187" fill="#F2F4F7" font-size="12" font-weight="600">Hakone</text>
+            </g>
+            <g>
+              <circle cx="250" cy="225" r="14" fill="#F59E0B"/>
+              <text x="250" y="230" fill="#1A1205">3</text>
+              <text x="250" y="207" fill="#F2F4F7" font-size="12" font-weight="600">Kyoto</text>
+            </g>
+            <g>
+              <circle cx="215" cy="255" r="14" fill="#F59E0B"/>
+              <text x="215" y="260" fill="#1A1205">4</text>
+              <text x="215" y="280" fill="#F2F4F7" font-size="12" font-weight="600">Nara</text>
+            </g>
+          </g>
+        </svg>
+
+        <!-- Routenliste -->
+        <div class="route-list">
+          <div class="route-row">
+            <span class="map-pin" aria-hidden="true">1</span>
+            <span class="route-name">Tokyo <span class="route-note">— Ankunft &amp; Shinjuku</span></span>
+            <a class="ts-chip" href="video.html" title="Zur Stelle 01:30 im Video">01:30</a>
+          </div>
+          <div class="route-row">
+            <span class="map-pin" aria-hidden="true">2</span>
+            <span class="route-name">Hakone <span class="route-note">— Onsen &amp; Fuji-Blick</span></span>
+            <a class="ts-chip" href="video.html" title="Zur Stelle 08:12 im Video">08:12</a>
+          </div>
+          <div class="route-row">
+            <span class="map-pin" aria-hidden="true">3</span>
+            <span class="route-name">Kyoto <span class="route-note">— Tempel &amp; Gion</span></span>
+            <a class="ts-chip" href="video.html" title="Zur Stelle 12:45 im Video">12:45</a>
+          </div>
+          <div class="route-row">
+            <span class="map-pin" aria-hidden="true">4</span>
+            <span class="route-name">Nara <span class="route-note">— Tagestrip &amp; Rehpark</span></span>
+            <a class="ts-chip" href="video.html" title="Zur Stelle 16:03 im Video">16:03</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Aktionen -->
+      <div class="btn-row" style="margin-top: var(--space-6)">
+        <button class="btn btn-primary" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>
+          Als Trip speichern
+        </button>
+        <a class="btn" href="video.html">Zurück zum Video</a>
+      </div>
+
+      <!-- Geocoding-Hinweis (Local-Only-Ausnahme, explizit) -->
+      <p class="hint-line">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/></svg>
+        Geocoding: Online (Opt-in) — einzige Netzverbindung neben YouTube, Orte lokal gecacht.
+      </p>
+
+    </main>
+  </div>
+</body>
+</html>

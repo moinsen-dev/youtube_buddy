@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wissen — YouTube Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Navigation -->
+    <nav class="app-nav" aria-label="Hauptnavigation">
+      <span class="nav-brand"><span class="brand-dot" aria-hidden="true"></span>YouTube Buddy</span>
+      <a class="nav-item" href="index.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" href="#" title="Bibliothek (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v14"/></svg>
+        <span>Bibliothek</span>
+      </a>
+      <a class="nav-item" href="#" title="Suche (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Suche</span>
+      </a>
+      <a class="nav-item" href="knowledge.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Wissen</span>
+      </a>
+      <a class="nav-item" href="#" title="Mehr (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>Mehr</span>
+      </a>
+    </nav>
+
+    <main class="app-content">
+
+      <header class="app-header">
+        <div>
+          <h1 class="text-title-1">Wissen</h1>
+          <p class="text-caption text-secondary">Deine verlinkte Wissensbasis — komplett lokal</p>
+        </div>
+        <div class="header-actions">
+          <a class="icon-button" href="#" aria-label="Wissen durchsuchen" title="Suche">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- Review-Kachel -->
+      <section class="section" aria-label="Review">
+        <a class="review-tile" href="flashcards.html">
+          <span class="review-count">14</span>
+          <span>
+            <span class="review-label" style="display:block">Karten fällig</span>
+            <span class="review-sub">Review starten · ca. 6 Minuten</span>
+          </span>
+          <svg class="chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </section>
+
+      <!-- Konzepte -->
+      <section class="section" aria-labelledby="sec-concepts">
+        <div class="section-header">
+          <h2 class="section-title" id="sec-concepts">Konzepte</h2>
+        </div>
+        <div class="concept-chips">
+          <a class="concept-chip" href="note.html">Tiefschlaf <span class="chip-count">· 6</span></a>
+          <a class="concept-chip" href="note.html">Gusseisen-Pflege <span class="chip-count">· 4</span></a>
+          <a class="concept-chip" href="note.html">Zwei-Minuten-Start <span class="chip-count">· 3</span></a>
+          <a class="concept-chip" href="note.html">Shinkansen <span class="chip-count">· 2</span></a>
+        </div>
+      </section>
+
+      <!-- Guides -->
+      <section class="section" aria-labelledby="sec-guides">
+        <div class="section-header">
+          <h2 class="section-title" id="sec-guides">Guides</h2>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-3)">
+          <a class="guide-row" href="guide.html">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+            <span class="guide-title">Tisch für die Sölch-Küche bauen</span>
+            <span class="guide-progress">3/9 ✓</span>
+          </a>
+          <a class="guide-row" href="guide.html">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+            <span class="guide-title">Sourdough-Grundrezept</span>
+            <span class="guide-progress todo">0/9</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Notizen (zuletzt) -->
+      <section class="section" aria-labelledby="sec-notes">
+        <div class="section-header">
+          <h2 class="section-title" id="sec-notes">Notizen (zuletzt)</h2>
+        </div>
+        <div class="note-list">
+          <a class="note-card" href="note.html">
+            <span class="note-icon" aria-hidden="true">⏱</span>
+            <span class="note-body">
+              <span class="note-title">Summary: Schlaf optimieren</span>
+              <span class="note-snippet">Tiefer Schlaf entsteht vor allem durch konstante Aufwachzeiten, Morgenlicht und Koffein-Pausen …</span>
+              <span class="note-footer">
+                <span class="ts-chip">🎬 04:12</span>
+                <span class="text-caption text-tertiary">3 Links</span>
+              </span>
+            </span>
+          </a>
+          <a class="note-card" href="note.html">
+            <span class="note-icon" aria-hidden="true">✎</span>
+            <span class="note-body">
+              <span class="note-title">Freie Notiz: Ideen Werkbank</span>
+              <span class="note-snippet">Untergestell aus Kantholz, Hobelbank-Zange links, Verkettung mit [[Tisch für die Sölch-Küche]] …</span>
+              <span class="note-footer">
+                <span class="text-caption text-tertiary">vor 2 Tagen · 1 Link</span>
+              </span>
+            </span>
+          </a>
+          <a class="note-card" href="note.html">
+            <span class="note-icon" aria-hidden="true">📖</span>
+            <span class="note-body">
+              <span class="note-title">Konzept: Gusseisen-Pflege</span>
+              <span class="note-snippet">Einbrennen, Reinigung ohne Spülmittel, Nachölen — Quellen aus 4 Videos …</span>
+              <span class="note-footer">
+                <span class="text-caption text-tertiary">4 Quellen · 6 Links</span>
+              </span>
+            </span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Graph -->
+      <section class="section" aria-label="Wissensgraph">
+        <a class="btn btn-block" href="graph.html" style="min-height: 56px">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="20" r="2"/><path d="M6.5 7.5 10 10.5M17.5 7.5 14 10.5M12 15v3"/></svg>
+          Wissensgraph ansehen
+        </a>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home — YouTube Buddy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+
+    <!-- Navigation: Bottom Tabs (Phone) / Rail (Tablet) / Sidebar (Desktop) -->
+    <nav class="app-nav" aria-label="Hauptnavigation">
+      <span class="nav-brand"><span class="brand-dot" aria-hidden="true"></span>YouTube Buddy</span>
+      <a class="nav-item" href="index.html" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" href="#" title="Bibliothek (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 4v14"/></svg>
+        <span>Bibliothek</span>
+      </a>
+      <a class="nav-item" href="#" title="Suche (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <span>Suche</span>
+      </a>
+      <a class="nav-item" href="knowledge.html">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Wissen</span>
+      </a>
+      <a class="nav-item" href="#" title="Mehr (nicht Teil des Prototyps)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+        <span>Mehr</span>
+      </a>
+    </nav>
+
+    <main class="app-content">
+
+      <!-- Header -->
+      <header class="app-header">
+        <div>
+          <h1 class="text-title-1">Guten Abend, Lena</h1>
+          <p class="text-caption text-secondary">Dienstag, 21. Juli · alles lokal auf diesem Gerät</p>
+        </div>
+        <div class="header-actions">
+          <a class="icon-button" href="#" aria-label="Suche" title="Suche">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </a>
+          <a class="icon-button" href="#" aria-label="Einstellungen" title="Einstellungen">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.56-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h0a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56h0a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1z"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- WEITERSCHAUEN -->
+      <section class="section" aria-labelledby="sec-continue">
+        <div class="section-header">
+          <h2 class="section-title" id="sec-continue">Weiterschauen</h2>
+        </div>
+        <div class="video-rail">
+
+          <a class="video-card" href="video.html">
+            <div class="thumb thumb-gradient-1">
+              <span class="thumb-label">Huberman Lab</span>
+              <span class="duration-badge">12:40</span>
+              <div class="progress-track"><div class="progress-fill" style="width: 60%"></div></div>
+            </div>
+            <div class="card-body">
+              <p class="card-title">Schlaf optimieren: Die 5 wichtigsten Protokolle</p>
+              <p class="card-meta">Huberman Lab · geschaut 60&nbsp;%</p>
+            </div>
+          </a>
+
+          <a class="video-card" href="video.html">
+            <div class="thumb thumb-gradient-2">
+              <span class="thumb-label">Fireship</span>
+              <span class="duration-badge">45:20</span>
+              <div class="progress-track"><div class="progress-fill" style="width: 25%"></div></div>
+            </div>
+            <div class="card-body">
+              <p class="card-title">TypeScript in 100 Sekunden — und was danach kommt</p>
+              <p class="card-meta">Fireship · geschaut 25&nbsp;%</p>
+            </div>
+          </a>
+
+          <a class="video-card" href="video.html">
+            <div class="thumb thumb-gradient-3">
+              <span class="thumb-label">Kurzgesagt</span>
+              <span class="duration-badge">18:05</span>
+              <div class="progress-track"><div class="progress-fill" style="width: 80%"></div></div>
+            </div>
+            <div class="card-body">
+              <p class="card-title">Was passiert, wenn du nie wieder schläfst?</p>
+              <p class="card-meta">Kurzgesagt · geschaut 80&nbsp;%</p>
+            </div>
+          </a>
+
+        </div>
+      </section>
+
+      <!-- TRIAGE — WATCH LATER -->
+      <section class="section" aria-labelledby="sec-triage">
+        <div class="section-header">
+          <h2 class="section-title" id="sec-triage">Triage — Watch Later</h2>
+          <span class="count-badge">12</span>
+        </div>
+        <div class="triage-list">
+
+          <a class="triage-row" href="video.html">
+            <span class="triage-badge score-high" role="img" aria-label="Bewertung 4 von 5 — lohnt sich">4</span>
+            <span class="row-title">Gusseiserne Pfanne richtig einbrennen — Schritt für Schritt</span>
+            <span class="row-duration">18:22</span>
+          </a>
+
+          <a class="triage-row" href="video.html">
+            <span class="triage-badge score-high" role="img" aria-label="Bewertung 5 von 5 — lohnt sich sehr">5</span>
+            <span class="row-title">Japan in 14 Tagen: Die komplette Route (Tokyo → Kyoto)</span>
+            <span class="row-duration">09:41</span>
+          </a>
+
+          <a class="triage-row" href="video.html">
+            <span class="triage-badge score-low" role="img" aria-label="Bewertung 2 von 5 — eher nicht lohnend">2</span>
+            <span class="row-title">Mein erster Monat mit Notion — ehrliches Fazit</span>
+            <span class="row-duration">51:03</span>
+          </a>
+
+          <a class="triage-row" href="video.html">
+            <span class="triage-badge score-mid" role="img" aria-label="Bewertung 3 von 5 — mittel">3</span>
+            <span class="row-title">Sourdough-Grundrezept für Anfänger</span>
+            <span class="row-duration">24:18</span>
+          </a>
+
+        </div>
+        <p class="text-caption text-tertiary" style="margin-top: var(--space-3)">
+          <a href="#" style="color: var(--info)">Analysiere Queue ▸</a> · läuft lokal auf diesem Gerät
+        </p>
+      </section>
+
+      <!-- HEUTE ZU WIEDERHOLEN -->
+      <section class="section" aria-labelledby="sec-review">
+        <h2 class="section-title" id="sec-review" style="margin-bottom: var(--space-4)">Heute zu wiederholen</h2>
+        <a class="review-tile" href="flashcards.html">
+          <span class="review-count">14</span>
+          <span>
+            <span class="review-label" style="display:block">Karten fällig</span>
+            <span class="review-sub">aus 5 Videos · ca. 6 Minuten</span>
+          </span>
+          <svg class="chevron" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+        </a>
+      </section>
+
+    </main>
+  </div>
+</body>
+</html>
