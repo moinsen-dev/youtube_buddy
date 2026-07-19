@@ -7,6 +7,7 @@ Arbeitsvereinbarung für alle (menschlichen und KI-)Beitragenden. **Source of tr
 Local-only Expo-App (iOS, Android, Web, Tablet, später Apple TV), die YouTube-Nutzung mit On-Device-KI strukturiert: schauen, tracken, analysieren und daraus Flashcards, Guides (Schritt-für-Schritt), Habits, Reise-Maps und eine Obsidian-ähnliche, verlinkte Wissensbasis bauen.
 
 **Fakten:**
+
 - Organisation / GitHub: `moinsen-dev` → Repo `moinsen-dev/youtube_buddy`
 - Bundle Identifier: `dev.moinsen.youtubebuddy` (iOS/Android)
 - Plattform-Engine: Expo SDK 52+, React Native, TypeScript strict, Expo Router
@@ -20,6 +21,10 @@ docs/DESIGN.md       # Design-Tokens, Komponenten, Wireframes (§5), Flows
 docs/ARCHITECTURE.md # Tech-Stack, Ordnerstruktur, KI-Engine, Datenmodell, Plattform-Matrix
 docs/ROADMAP.md      # Phasen 0–12 mit Scope, Abhängigkeiten, Exit-Kriterien
 docs/AGENT-TOOLING.md # Inventar & Betrieb der Agent-Werkzeuge (MCPs, Skills, CLIs, Expo/EAS)
+app/                 # Expo Router — nur Routing + Screen-Composition
+features/            # fachliche Module (M1–M11) + shell/
+core/                # technische Basis: theme, platform, db, i18n, (später ai-engine, youtube, …)
+assets/              # Icons/Splash
 prototype/           # Statischer HTML/CSS-Klickprototyp (kein Build)
 STATE.md             # Aktueller Arbeitsstand (wird fortlaufend gepflegt)
 ```

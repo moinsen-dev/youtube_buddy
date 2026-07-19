@@ -51,11 +51,13 @@ youtube_buddy/
 │   ├── travel/                 # M7: Orts-Extraktion, Geocoding (Opt-in), Map
 │   ├── search/                 # M8: Embedding-Index, Vektorsuche, Query-UI
 │   ├── hygiene/                # M9: Sehverhalten-Report, Unsubscribe-Flow
-│   └── knowledge/              # M11: Notizen, Wiki-Link-Parser/Resolver, Konzepte, Backlinks, Graph
+│   ├── knowledge/              # M11: Notizen, Wiki-Link-Parser/Resolver, Konzepte, Backlinks, Graph
+│   └── shell/                  # App-Shell: SideNav (Rail/Sidebar), Nav-Items, Platzhalter-Screens
 ├── core/
 │   ├── ai-engine/              # M4: LLMEngine-Interface + Backends + Modell-Registry
 │   ├── youtube/                # API-Client, Quota-Budget, DTOs (zod)
 │   ├── db/                     # Drizzle-Schema, Migrationen, Repositories
+│   ├── i18n/                   # String-Scaffold (de/en von Tag 1, DESIGN §7)
 │   ├── theme/                  # Design-Tokens aus DESIGN.md §2 als TS-Objekt
 │   ├── export/                 # JSON-Export/Import (Backup) + Obsidian-Vault-Export (M11)
 │   ├── markdown/               # Wiki-Link-Parser, Link-Resolver-Index, Markdown→AST (plattformneutral)
