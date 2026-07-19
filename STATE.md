@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-19
-**Aktuelle Phase:** **Phase 2 (Player & Watch-Tracking, M2) abgeschlossen ✅** → nächster Schritt **Phase 3 (Transkript-Pipeline, M3)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 3 (Transkript-Pipeline, M3) abgeschlossen ✅** → nächster Schritt **Phase 4 (KI-Engine Core nativ, M4)** gemäß `docs/ROADMAP.md`
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
 
 ---
@@ -104,6 +104,25 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 3. **Manueller Sync = TTL-Bypass:** Der Sync-Button erzwingt nun immer einen Fetch (ARCHITECTURE §6 „TTL oder manuell"); automatische Syncs bleiben TTL-gesteuert (0 Quota bei erneutem Öffnen).
 4. **Bekannte Warnung (nicht blockierend):** Beim App-Start erscheint sporadisch `NativeDatabase.execAsync … cannot rollback - no transaction is active` (drizzle/expo-sqlite) — Sessions/Writes funktionieren dennoch korrekt; beobachten, ggf. in Phase 3 analysieren.
 
+| **Phase 3 — Transkript-Pipeline (M3)** | ✅ | **Exit-Kriterien alle erfüllt (2026-07-19): 10/10 reale Testvideos mit Transkript + korrekten Zeitstempeln (`scripts/check-transcripts.ts`), Cache (1 Abruf/Video, DB-verifiziert), States inkl. Empty/Error+Retry** |
+
+## Phase 3 — Ergebnis (2026-07-19, abgeschlossen)
+
+**Gebaut:** Migration `0004_m3_transcripts` (transcripts + transcript_chunks + Index); `features/transcripts` (Extraktions-Adapter via **`youtube-transcript`** mit Sprach-Fallback de → en → erste, `chunker` ~800 Zeichen mit Zeitstempel-Erhalt, `use-transcript` Hook cache-first, `TranscriptPanel` mit States loading/ready/no-captions/error+retry); Web geht über die Server-Route `app/api/transcript/[id]+api.ts` (CORS); DB-Repositories. 42 Tests + tsc + Lint grün.
+
+**Verifikation:**
+
+- **10/10 reale Testvideos** (Kurzgesagt-RSS, öffentlich) liefern Transkripte mit sauberen Zeitstempeln (`npx tsx scripts/check-transcripts.ts` → 10/10 ok; ASR-Overlaps sind erwartetes YouTube-Verhalten, kein Fehler).
+- **iOS In-App:** Transkript-Panel im Video-Detail (3 Abschnitte, Sprache en, Mono-Zeitstempel); DB verifiziert: `transcripts` (en/captions) + 3 Chunks von 1,36 s bis 211,32 s.
+- **Cache:** Meta-Check schlägt Netzwerk nur beim ersten Abruf an (1 Abruf/Video); Zweitöffnen kommt aus der lokalen DB.
+- **Web:** gleiche Ansicht über die API-Route (Server-seitige Extraktion).
+
+**Entscheidungen:**
+
+1. **Extraktion via `youtube-transcript`-Bibliothek statt Eigenbau** — der handgeschriebene Scraper (Watch-Page → captionTracks → timedtext) schlug fehl: YouTube liefert auf diesem Pfad inzwischen leere Responses. Die Bibliothek bildet die aktuellen Endpunkte ab und ist in PRD §7.1 explizit als Referenz-Ansatz genannt.
+2. **Whisper-Fallback (offene Phase-3-Frage): NICHT nötig** — Extraktion funktioniert zuverlässig (Fehlerquote 0/10). Whisper bleibt Could-Option für Videos ohne Untertitel.
+3. **Web-Transkripte über API-Route** (`+api.ts`) — youtube.com sendet keine CORS-Header; produktionsreife Entscheidung (EAS Hosting vs. Client-seitig) fällt in Phase 11.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -112,9 +131,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
 5. Datentransfer Phone → TV — Entscheidung in Phase 12.
 
-## Nächste Schritte (Phase 3 — Transkript-Pipeline, M3)
+## Nächste Schritte (Phase 4 — KI-Engine Core, nativ, M4)
 
-1. Untertitel-Extraktion (Adapter-Schicht, s. PRD §7.1 Grauzone) mit Sprachwahl; Chunker mit Zeitstempel-Erhalt.
-2. `transcripts`/`transcript_chunks`-Tabellen + Cache (1 Abruf/Video); Migration 0004.
-3. Fehler- und „keine Untertitel"-States im UI; Transkript-Ansicht im Video-Detail.
-4. **Exit:** Für 10 reale Testvideos: Transkript lokal, Chunks mit korrekten Zeitstempeln; Zweitabruf aus Cache (0 Netzwerk); Videos ohne Untertitel mit sauberem Empty-State. Entscheidung am Ende: Whisper-Fallback nötig?
+1. `LLMEngine`-Interface + `LlamaCppEngine` (llama.rn); Modell-Registry + Download via expo-file-system (Resume, SHA-256-Check).
+2. Modell-Management-UI (DESIGN 5.11) inkl. RAM-/Speicher-Checks; Prompt-Template-System mit zod-validierten JSON-Outputs (GBNF/JSON-Mode + Repair-Retry).
+3. Benchmark-Harness + Golden-Set (10 Videos); **Modell-Entscheidung final** (Qwen3-4B vs. Gemma-3-4B vs. Llama-3.2-3B).
+4. **Exit:** Auf Referenzgeräten (iPhone 13, Pixel 7): Modell lädt, `generate` liefert schema-konformes JSON, ≥ 10 Tok/s; Golden-Set-Suite grün; Abbruch funktioniert. Achtung: Dev-Client statt Expo Go ab hier (llama.rn nativ).

@@ -47,7 +47,6 @@ export const videos = sqliteTable('videos', {
 });
 
 // --- M2: Player & Watch-Tracking (ARCHITECTURE.md §4) ---
-
 export const watchSessions = sqliteTable(
   'watch_sessions',
   {
@@ -63,6 +62,34 @@ export const watchSessions = sqliteTable(
     source: text('source').notNull().default('player'),
   },
   (table) => [index('idx_watch_sessions_video_started').on(table.videoId, table.startedAt)],
+);
+
+// --- M3: Transkripte (ARCHITECTURE.md §4) ---
+
+export const transcripts = sqliteTable('transcripts', {
+  videoId: text('video_id')
+    .primaryKey()
+    .references(() => videos.id),
+  lang: text('lang'),
+  /** 'captions' | 'whisper' (whisper = späterer Fallback) */
+  source: text('source'),
+  fetchedAt: integer('fetched_at').notNull(),
+});
+
+export const transcriptChunks = sqliteTable(
+  'transcript_chunks',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => videos.id),
+    idx: integer('idx').notNull(),
+    startSec: real('start_sec').notNull(),
+    endSec: real('end_sec').notNull(),
+    text: text('text').notNull(),
+    embeddingId: integer('embedding_id'),
+  },
+  (table) => [index('idx_transcript_chunks_video_idx').on(table.videoId, table.idx)],
 );
 
 export const playlists = sqliteTable('playlists', {

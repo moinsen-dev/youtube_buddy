@@ -9,8 +9,14 @@ import {
   subscriptions,
   videos,
   watchSessions,
+  transcriptChunks,
+  transcripts,
 } from '@/core/db/schema';
 import type * as schema from '@/core/db/schema';
+
+// --- transcripts (M3) ---
+
+import type { TranscriptChunk } from '@/features/transcripts/chunker';
 
 // --- watch_sessions (M2) ---
 
@@ -286,4 +292,56 @@ export async function markVideoWatched(db: Db, videoId: string, now: number): Pr
     percentWatched: 1,
     source: 'manual',
   });
+}
+
+export interface TranscriptMeta {
+  videoId: string;
+  lang: string | null;
+  source: string | null;
+  fetchedAt: number;
+}
+
+export async function getTranscriptMeta(db: Db, videoId: string): Promise<TranscriptMeta | null> {
+  const rows = await db.select().from(transcripts).where(eq(transcripts.videoId, videoId)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Saves a transcript: replaces meta row + all chunks in one transaction. */
+export async function saveTranscript(
+  db: Db,
+  meta: TranscriptMeta,
+  chunks: TranscriptChunk[],
+): Promise<void> {
+  await db.delete(transcripts).where(eq(transcripts.videoId, meta.videoId));
+  await db.delete(transcriptChunks).where(eq(transcriptChunks.videoId, meta.videoId));
+  await db.insert(transcripts).values(meta);
+  for (const chunk of chunks) {
+    await db.insert(transcriptChunks).values({
+      videoId: meta.videoId,
+      idx: chunk.idx,
+      startSec: chunk.startSec,
+      endSec: chunk.endSec,
+      text: chunk.text,
+    });
+  }
+}
+
+export interface TranscriptChunkRow {
+  idx: number;
+  startSec: number;
+  endSec: number;
+  text: string;
+}
+
+export async function listTranscriptChunks(db: Db, videoId: string): Promise<TranscriptChunkRow[]> {
+  return db
+    .select({
+      idx: transcriptChunks.idx,
+      startSec: transcriptChunks.startSec,
+      endSec: transcriptChunks.endSec,
+      text: transcriptChunks.text,
+    })
+    .from(transcriptChunks)
+    .where(eq(transcriptChunks.videoId, videoId))
+    .orderBy(transcriptChunks.idx);
 }

@@ -19,6 +19,8 @@ import { YouTubeClient, createMemoryETagCache } from '@/core/youtube/client';
 import { bestThumbnail, parseIsoDate, parseIsoDuration, videoListSchema } from '@/core/youtube/dto';
 import { createDbQuotaStore } from '@/core/youtube/quota-store';
 import { useAuth } from '@/features/auth/auth-context';
+import { TranscriptPanel } from '@/features/transcripts/transcript-panel';
+import { useTranscript } from '@/features/transcripts/use-transcript';
 import { PlayerTracker } from './player-tracker';
 import { YouTubePlayer } from './youtube-player';
 
@@ -176,6 +178,8 @@ export function VideoScreen({ videoId }: { videoId: string }) {
     setPercent(1);
   }, [videoId]);
 
+  const transcript = useTranscript(videoId);
+
   if (!ready) {
     return <View style={[styles.container, { backgroundColor: theme.colors.bgBase }]} />;
   }
@@ -252,6 +256,14 @@ export function VideoScreen({ videoId }: { videoId: string }) {
             </Text>
           </Pressable>
         )}
+
+        <TranscriptPanel
+          status={transcript.status}
+          chunks={transcript.chunks}
+          lang={transcript.lang}
+          error={transcript.error}
+          onRetry={transcript.retry}
+        />
       </View>
     </View>
   );
