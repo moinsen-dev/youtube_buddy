@@ -27,6 +27,16 @@ export const migrations: Migration[] = [
       'CREATE TABLE IF NOT EXISTS quota_log (day TEXT PRIMARY KEY, units_used INTEGER NOT NULL DEFAULT 0)',
     ],
   },
+  {
+    id: '0002_m1_youtube_read',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS channels (id TEXT PRIMARY KEY, title TEXT NOT NULL, thumbnail_url TEXT, subscriber_count INTEGER, updated_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS subscriptions (channel_id TEXT PRIMARY KEY REFERENCES channels(id), subscribed_at INTEGER NOT NULL, deleted_at INTEGER)',
+      'CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, channel_id TEXT NOT NULL REFERENCES channels(id), title TEXT NOT NULL, duration_sec INTEGER, published_at INTEGER, thumbnail_url TEXT, description TEXT, updated_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS playlists (id TEXT PRIMARY KEY, title TEXT NOT NULL, item_count INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS playlist_items (playlist_id TEXT NOT NULL REFERENCES playlists(id), video_id TEXT NOT NULL REFERENCES videos(id), position INTEGER NOT NULL, PRIMARY KEY (playlist_id, video_id))',
+    ],
+  },
 ];
 
 /**

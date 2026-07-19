@@ -59,14 +59,17 @@ describe('core/db migration runner', () => {
     const db = createFakeExecutor();
     const applied = await runMigrations(db);
 
-    expect(applied).toEqual(['0001_init']);
+    expect(applied).toEqual(['0001_init', '0002_m1_youtube_read']);
     expect(db.executedSql).toContain(
       'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)',
     );
     expect(db.executedSql).toContain(
       'CREATE TABLE IF NOT EXISTS quota_log (day TEXT PRIMARY KEY, units_used INTEGER NOT NULL DEFAULT 0)',
     );
-    expect(db.appliedIds).toEqual(['0001_init']);
+    expect(db.executedSql).toContain(
+      'CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, channel_id TEXT NOT NULL REFERENCES channels(id), title TEXT NOT NULL, duration_sec INTEGER, published_at INTEGER, thumbnail_url TEXT, description TEXT, updated_at INTEGER NOT NULL)',
+    );
+    expect(db.appliedIds).toEqual(['0001_init', '0002_m1_youtube_read']);
   });
 
   it('is idempotent — a second run applies nothing', async () => {
@@ -75,7 +78,7 @@ describe('core/db migration runner', () => {
     const second = await runMigrations(db);
 
     expect(second).toEqual([]);
-    expect(db.appliedIds).toEqual(['0001_init']);
+    expect(db.appliedIds).toEqual(['0001_init', '0002_m1_youtube_read']);
   });
 
   it('runs each migration inside a transaction', async () => {

@@ -1,19 +1,34 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Slot, Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useBreakpoint } from '@/core/platform';
 import { useTheme } from '@/core/theme';
+import { useAuth } from '@/features/auth/auth-context';
+import { LoginScreen } from '@/features/auth/login-screen';
 import { navItems, navLabel } from '@/features/shell/nav-items';
 import { SideNav } from '@/features/shell/side-nav';
 
 /**
  * Responsive shell (DESIGN.md §3): bottom tabs on phone (<600), navigation
  * rail on tablet (600–1024), sidebar on web/desktop (>1024).
+ * Gates on auth: signed-out users see the login screen (DESIGN 5.1).
  */
 export default function TabsLayout() {
   const theme = useTheme();
   const breakpoint = useBreakpoint();
+  const { status } = useAuth();
+
+  if (status === 'loading') {
+    return (
+      <View style={[styles.center, { backgroundColor: theme.colors.bgBase }]}>
+        <ActivityIndicator color={theme.colors.accentPrimary} size="large" />
+      </View>
+    );
+  }
+  if (status === 'signedOut') {
+    return <LoginScreen />;
+  }
 
   if (breakpoint !== 'phone') {
     return (
@@ -60,5 +75,10 @@ const styles = StyleSheet.create({
   row: {
     flex: 1,
     flexDirection: 'row',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

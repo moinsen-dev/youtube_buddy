@@ -36,6 +36,21 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.870515903914-8vk5cfiql8nl5imt2g6r3es35s5hrgj7"
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
       ]
     ],
     "experiments": {
@@ -43,6 +58,10 @@
       "reactCompiler": true
     },
     "extra": {
+      "google": {
+        "webClientId": "870515903914-qmu75gejgjhb6676vvai47ccnkq8g5ar.apps.googleusercontent.com",
+        "iosClientId": "870515903914-8vk5cfiql8nl5imt2g6r3es35s5hrgj7.apps.googleusercontent.com"
+      },
       "router": {},
       "eas": {
         "projectId": "5bc5555e-6c74-4157-b85e-6a8e4333a29d"

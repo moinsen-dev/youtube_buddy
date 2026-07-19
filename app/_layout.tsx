@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getDb } from '@/core/db';
 import { useTheme } from '@/core/theme';
+import { AuthProvider } from '@/features/auth/auth-context';
 
 export default function RootLayout() {
   const theme = useTheme();
@@ -15,13 +16,15 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style={theme.dark ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: theme.colors.bgBase },
-        }}
-      />
+      <AuthProvider>
+        <StatusBar style={theme.dark ? 'light' : 'dark'} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: theme.colors.bgBase },
+          }}
+        />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

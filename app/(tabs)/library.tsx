@@ -1,6 +1,5 @@
-import { t } from '@/core/i18n/strings';
-import { DummyScreen } from '@/features/shell/dummy-screen';
+import { LibraryScreen } from '@/features/library/library-screen';
 
-export default function LibraryScreen() {
-  return <DummyScreen title={t().tabs.library} />;
+export default function LibraryRoute() {
+  return <LibraryScreen />;
 }
