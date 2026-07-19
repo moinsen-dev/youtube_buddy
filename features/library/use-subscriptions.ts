@@ -94,8 +94,9 @@ export function useSubscriptions() {
     setError(null);
     try {
       if (db) {
-        await syncSubscriptions(client, db);
-        const watchLater = await syncWatchLater(client, db);
+        // Manual sync is the TTL bypass (ARCHITECTURE §6: TTL or manual).
+        await syncSubscriptions(client, db, { force: true });
+        const watchLater = await syncWatchLater(client, db, { force: true });
         setWatchLaterCount(watchLater.items);
         await reload(db);
       } else {

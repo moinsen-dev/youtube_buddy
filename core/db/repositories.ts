@@ -1,4 +1,4 @@
-import { eq, isNull, notInArray } from 'drizzle-orm';
+import { eq, isNull, notInArray, desc } from 'drizzle-orm';
 import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 
 import {
@@ -8,8 +8,11 @@ import {
   settings,
   subscriptions,
   videos,
+  watchSessions,
 } from '@/core/db/schema';
 import type * as schema from '@/core/db/schema';
+
+// --- watch_sessions (M2) ---
 
 export type Db = ExpoSQLiteDatabase<typeof schema>;
 
@@ -146,4 +149,141 @@ export async function listPlaylistVideoIds(db: Db, playlistId: string): Promise<
     .where(eq(playlistItems.playlistId, playlistId))
     .orderBy(playlistItems.position);
   return rows.map((row) => row.videoId);
+}
+
+// --- videos (M1/M2 helpers) ---
+
+export interface VideoListItem {
+  id: string;
+  title: string;
+  channelId: string;
+  durationSec: number | null;
+  thumbnailUrl: string | null;
+}
+
+export async function getVideo(db: Db, id: string): Promise<VideoListItem | null> {
+  const rows = await db
+    .select({
+      id: videos.id,
+      title: videos.title,
+      channelId: videos.channelId,
+      durationSec: videos.durationSec,
+      thumbnailUrl: videos.thumbnailUrl,
+    })
+    .from(videos)
+    .where(eq(videos.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+/** Videos of a playlist with metadata (e.g. Watch Later rail on Home). */
+export async function listPlaylistVideos(
+  db: Db,
+  playlistId: string,
+  limit = 50,
+): Promise<VideoListItem[]> {
+  return db
+    .select({
+      id: videos.id,
+      title: videos.title,
+      channelId: videos.channelId,
+      durationSec: videos.durationSec,
+      thumbnailUrl: videos.thumbnailUrl,
+    })
+    .from(playlistItems)
+    .innerJoin(videos, eq(playlistItems.videoId, videos.id))
+    .where(eq(playlistItems.playlistId, playlistId))
+    .orderBy(playlistItems.position)
+    .limit(limit);
+}
+
+export interface WatchSessionRow {
+  id: number;
+  videoId: string;
+  startedAt: number;
+  endedAt: number | null;
+  positionSec: number;
+  percentWatched: number;
+  source: string;
+}
+
+export async function insertWatchSession(
+  db: Db,
+  row: Omit<WatchSessionRow, 'id'>,
+): Promise<number> {
+  const result = await db.insert(watchSessions).values(row);
+  return Number(result.lastInsertRowId);
+}
+
+export async function updateWatchSession(
+  db: Db,
+  id: number,
+  patch: Partial<Omit<WatchSessionRow, 'id' | 'videoId'>>,
+): Promise<void> {
+  await db.update(watchSessions).set(patch).where(eq(watchSessions.id, id));
+}
+
+/** Latest session for a video — used for resume-on-reopen. */
+export async function getLatestSessionForVideo(
+  db: Db,
+  videoId: string,
+): Promise<WatchSessionRow | null> {
+  const rows = await db
+    .select()
+    .from(watchSessions)
+    .where(eq(watchSessions.videoId, videoId))
+    .orderBy(desc(watchSessions.startedAt))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export interface SessionWithVideo {
+  session: WatchSessionRow;
+  video: VideoListItem;
+}
+
+async function latestSessionsWithVideo(db: Db): Promise<SessionWithVideo[]> {
+  const rows = await db
+    .select()
+    .from(watchSessions)
+    .innerJoin(videos, eq(watchSessions.videoId, videos.id))
+    .orderBy(desc(watchSessions.startedAt));
+  const byVideo = new Map<string, SessionWithVideo>();
+  for (const row of rows) {
+    if (byVideo.has(row.watch_sessions.videoId)) continue;
+    byVideo.set(row.watch_sessions.videoId, {
+      session: row.watch_sessions,
+      video: {
+        id: row.videos.id,
+        title: row.videos.title,
+        channelId: row.videos.channelId,
+        durationSec: row.videos.durationSec,
+        thumbnailUrl: row.videos.thumbnailUrl,
+      },
+    });
+  }
+  return [...byVideo.values()];
+}
+
+/** "Weiterschauen" rail: open sessions below the watched threshold. */
+export async function listOpenSessions(db: Db): Promise<SessionWithVideo[]> {
+  const all = await latestSessionsWithVideo(db);
+  return all.filter((row) => row.session.percentWatched < 0.8 && row.session.source !== 'manual');
+}
+
+/** Verlauf tab: latest session per video, newest first. */
+export async function listHistory(db: Db): Promise<SessionWithVideo[]> {
+  return latestSessionsWithVideo(db);
+}
+
+/** Manual "als geschaut markieren" — a full-percent row with source 'manual'. */
+export async function markVideoWatched(db: Db, videoId: string, now: number): Promise<void> {
+  await insertWatchSession(db, {
+    videoId,
+    startedAt: now,
+    endedAt: now,
+    positionSec: 0,
+    percentWatched: 1,
+    source: 'manual',
+  });
 }

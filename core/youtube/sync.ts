@@ -1,5 +1,4 @@
-import type {
-  Db,
+import {
   getSetting,
   listPlaylistVideoIds,
   markSubscriptionsDeleted,
@@ -10,6 +9,7 @@ import type {
   upsertSubscriptions,
   upsertVideos,
   type ChannelRow,
+  type Db,
   type SubscriptionRow,
   type VideoRow,
 } from '@/core/db/repositories';
@@ -230,6 +230,7 @@ export async function syncWatchLater(
 
   await upsertVideos(db, videoRows);
   await replacePlaylistItems(db, playlistId, videoIds);
+  await setSetting(db, 'watch_later.playlist_id', playlistId);
   await writeLastSync(db, 'watch_later', now);
   return { synced: true, reason: 'ok', items: (await listPlaylistVideoIds(db, playlistId)).length };
 }

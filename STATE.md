@@ -3,25 +3,26 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-19
-**Aktuelle Phase:** **Phase 1 (Auth & YouTube-Read, M1) abgeschlossen ✅** → nächster Schritt **Phase 2 (Player & Watch-Tracking, M2)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 2 (Player & Watch-Tracking, M2) abgeschlossen ✅** → nächster Schritt **Phase 3 (Transkript-Pipeline, M3)** gemäß `docs/ROADMAP.md`
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
 
 ---
 
 ## Deliverables
 
-| Deliverable                            | Status | Bemerkung                                                                                                                                                        |
-| -------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/PRD.md` v1.1                     | ✅     | Module M1–M11, MoSCoW, Risiken, Metriken                                                                                                                         |
-| `docs/DESIGN.md` v1.1                  | ✅     | Tokens, 15 Wireframes, Tab „Wissen", Guide-Modus, Graph                                                                                                          |
-| `docs/ARCHITECTURE.md` v1.1            | ✅     | Stack, Ordnerstruktur, `LLMEngine`, Datenmodell (inkl. `notes`/`concepts`/`note_links`), Plattform-Matrix                                                        |
-| `docs/ROADMAP.md` v1.1                 | ✅     | 13 Phasen (0–12), Exit-Kriterien, Risiken                                                                                                                        |
-| `prototype/` (HTML/CSS)                | ✅     | 9 Seiten, im Browser verifiziert (mobil 375 px / Tablet 800 px / Desktop 1440 px, Console fehlerfrei, Links ok)                                                  |
-| `AGENTS.md`                            | ✅     | Arbeitsweise, harte Regeln, Konventionen, Agent-Tooling                                                                                                          |
-| `docs/AGENT-TOOLING.md` v1.0           | ✅     | Inventar MCPs/Skills/CLIs, Expo-MCP-Detail, Autonomie-Regeln, Verifikationsprotokoll                                                                             |
-| GitHub-Repo                            | ✅     | `moinsen-dev/youtube_buddy` (**public**), Initial-Commit auf `develop`                                                                                           |
-| **Phase 0 — Fundament (Expo-App)**     | ✅     | **Exit-Kriterien alle erfüllt (2026-07-19), Verifikation s. unten**                                                                                              |
-| **Phase 1 — Auth & YouTube-Read (M1)** | ✅     | **Exit-Kriterien alle erfüllt (2026-07-19): Login/Logout auf Web/iOS/Android, echte Abos nach Sync, Cache ohne Quota, Quota-Zähler per Unit-Test + live belegt** |
+| Deliverable                                | Status | Bemerkung                                                                                                                                                                                                    |
+| ------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docs/PRD.md` v1.1                         | ✅     | Module M1–M11, MoSCoW, Risiken, Metriken                                                                                                                                                                     |
+| `docs/DESIGN.md` v1.1                      | ✅     | Tokens, 15 Wireframes, Tab „Wissen", Guide-Modus, Graph                                                                                                                                                      |
+| `docs/ARCHITECTURE.md` v1.1                | ✅     | Stack, Ordnerstruktur, `LLMEngine`, Datenmodell (inkl. `notes`/`concepts`/`note_links`), Plattform-Matrix                                                                                                    |
+| `docs/ROADMAP.md` v1.1                     | ✅     | 13 Phasen (0–12), Exit-Kriterien, Risiken                                                                                                                                                                    |
+| `prototype/` (HTML/CSS)                    | ✅     | 9 Seiten, im Browser verifiziert (mobil 375 px / Tablet 800 px / Desktop 1440 px, Console fehlerfrei, Links ok)                                                                                              |
+| `AGENTS.md`                                | ✅     | Arbeitsweise, harte Regeln, Konventionen, Agent-Tooling                                                                                                                                                      |
+| `docs/AGENT-TOOLING.md` v1.0               | ✅     | Inventar MCPs/Skills/CLIs, Expo-MCP-Detail, Autonomie-Regeln, Verifikationsprotokoll                                                                                                                         |
+| GitHub-Repo                                | ✅     | `moinsen-dev/youtube_buddy` (**public**), Initial-Commit auf `develop`                                                                                                                                       |
+| **Phase 0 — Fundament (Expo-App)**         | ✅     | **Exit-Kriterien alle erfüllt (2026-07-19), Verifikation s. unten**                                                                                                                                          |
+| **Phase 1 — Auth & YouTube-Read (M1)**     | ✅     | **Exit-Kriterien alle erfüllt (2026-07-19): Login/Logout auf Web/iOS/Android, echte Abos nach Sync, Cache ohne Quota, Quota-Zähler per Unit-Test + live belegt**                                             |
+| **Phase 2 — Player & Watch-Tracking (M2)** | ✅     | **Exit-Kriterien alle erfüllt (2026-07-19): IFrame-Player auf 3 Plattformen, Sessions mit korrekten Prozentwerten in DB, Weiterschauen-Rail mit Resume (53 % → Start bei 1:53), Verlauf-Tab, 80-%-Schwelle** |
 
 ## Phase 0 — Verifikation (Exit-Kriterien, ROADMAP §Phase 0)
 
@@ -82,6 +83,27 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Sonstiges:** `ios/Podfile` enthält Fix `pod 'GoogleUtilities'/'RecaptchaInterop', :modular_headers => true` (AppCheckCore). Android-AVD `Pixel_9a` wurde repariert (System-Image android-37 nachinstalliert, Skin-Eintrag in `~/.android/avd/Pixel_9a.avd/config.ini` auf `1080x2424`/`_no_skin` geändert — User-Maschine, beabsichtigt).
 
+## Phase 2 — Ergebnis (2026-07-19, abgeschlossen)
+
+**Gebaut:** Migration `0003_m2_watch_tracking` (+ Index); `features/player` (IFrame-Player WebView nativ + iframe Web mit einheitlicher Event-API, `PlayerTracker` pure mit 5-s-Ticks/Throttle, Video-Detail mit Resume + „Als geschaut markieren" + Metadaten-Fetch für unbekannte Videos); `features/home` (Home mit Weiterschauen-/Watch-Later-Rails, VideoCard); Verlauf-Tab in Bibliothek; Repositories (Sessions, offene Sessions, Verlauf, Playlist-Videos). 38 Tests + tsc + Lint grün.
+
+**Verifikations-Matrix (Exit-Kriterien erfüllt):**
+
+| Kriterium                        | iOS                                                  | Android                               | Web                                               |
+| -------------------------------- | ---------------------------------------------------- | ------------------------------------- | ------------------------------------------------- |
+| IFrame-Player spielt             | ✅                                                   | ✅                                    | ✅                                                |
+| Session in DB (Position/Prozent) | ✅ (sqlite3 verifiziert: 113 s, 53 %)                | ✅ (run-as verifiziert: 14 s, 73,6 %) | ⚠️ Tracking live, DB No-op (Phase 1-Entscheidung) |
+| Weiterschauen-Rail + Resume      | ✅ (Rail mit Balken, Detail lädt 53 % + start=113 s) | ✅ (Rail mit Balken)                  | — (kein Cache)                                    |
+| 80-%-Schwelle „geschaut"         | ✅ (19-s-Video → 100 %, Badge im Verlauf)            | ✅                                    | ✅ (Logik per Unit-Test)                          |
+| Verlauf-Tab                      | ✅                                                   | ✅                                    | ✅                                                |
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **WebView-Embed „Fehler 153/152-4":** YouTube verlangt eine valide HTTP-Origin — `baseUrl: 'http://localhost:8081'` im WebView-HTML (identisch zur funktionierenden Web-Origin). `youtube.com` als baseUrl schlägt fehl (Self-Embed-Check).
+2. **„Bridge tot"-Fehldiagnose:** Der Expo-Dev-Client zeigte nach `terminate`+`openurl` nur den Launcher („Searching for development servers") — Testzyklen liefen gegen den Launcher statt die App. Korrekte Sequenz: erst `exp+youtube-buddy://expo-development-client/?url=…` (App laden), dann `youtubebuddy://…` (Route).
+3. **Manueller Sync = TTL-Bypass:** Der Sync-Button erzwingt nun immer einen Fetch (ARCHITECTURE §6 „TTL oder manuell"); automatische Syncs bleiben TTL-gesteuert (0 Quota bei erneutem Öffnen).
+4. **Bekannte Warnung (nicht blockierend):** Beim App-Start erscheint sporadisch `NativeDatabase.execAsync … cannot rollback - no transaction is active` (drizzle/expo-sqlite) — Sessions/Writes funktionieren dennoch korrekt; beobachten, ggf. in Phase 3 analysieren.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -90,9 +112,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
 5. Datentransfer Phone → TV — Entscheidung in Phase 12.
 
-## Nächste Schritte (Phase 2 — Player & Watch-Tracking, M2)
+## Nächste Schritte (Phase 3 — Transkript-Pipeline, M3)
 
-1. IFrame-Player-Wrapper (WebView nativ, iframe Web) mit einheitlicher Event-API; `PlayerTracker` schreibt `watch_sessions` (5-s-Ticks, Pause/Ende).
-2. Video-Detail-Screen Grundgerüst (DESIGN 5.4, ohne KI-Tabs); Home-Screen (5.2) mit „Weiterschauen"-Rail.
-3. Verlaufs-Tab in Bibliothek; „Als geschaut markieren" (manuell).
-4. **Exit:** Video schauen → Session mit korrektem Prozentwert in DB; App-Neustart → „Weiterschauen" setzt an letzter Position fort; 80-%-Schwelle markiert „geschaut".
+1. Untertitel-Extraktion (Adapter-Schicht, s. PRD §7.1 Grauzone) mit Sprachwahl; Chunker mit Zeitstempel-Erhalt.
+2. `transcripts`/`transcript_chunks`-Tabellen + Cache (1 Abruf/Video); Migration 0004.
+3. Fehler- und „keine Untertitel"-States im UI; Transkript-Ansicht im Video-Detail.
+4. **Exit:** Für 10 reale Testvideos: Transkript lokal, Chunks mit korrekten Zeitstempeln; Zweitabruf aus Cache (0 Netzwerk); Videos ohne Untertitel mit sauberem Empty-State. Entscheidung am Ende: Whisper-Fallback nötig?

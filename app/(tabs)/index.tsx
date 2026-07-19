@@ -1,6 +1,5 @@
-import { t } from '@/core/i18n/strings';
-import { DummyScreen } from '@/features/shell/dummy-screen';
+import { HomeScreen } from '@/features/home/home-screen';
 
-export default function HomeScreen() {
-  return <DummyScreen title={t().tabs.home} />;
+export default function HomeRoute() {
+  return <HomeScreen />;
 }

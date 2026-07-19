@@ -37,6 +37,13 @@ export const migrations: Migration[] = [
       'CREATE TABLE IF NOT EXISTS playlist_items (playlist_id TEXT NOT NULL REFERENCES playlists(id), video_id TEXT NOT NULL REFERENCES videos(id), position INTEGER NOT NULL, PRIMARY KEY (playlist_id, video_id))',
     ],
   },
+  {
+    id: '0003_m2_watch_tracking',
+    statements: [
+      "CREATE TABLE IF NOT EXISTS watch_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), started_at INTEGER NOT NULL, ended_at INTEGER, position_sec INTEGER NOT NULL DEFAULT 0, percent_watched REAL NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT 'player')",
+      'CREATE INDEX IF NOT EXISTS idx_watch_sessions_video_started ON watch_sessions (video_id, started_at)',
+    ],
+  },
 ];
 
 /**

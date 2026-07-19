@@ -52,6 +52,7 @@ youtube_buddy/
 │   ├── search/                 # M8: Embedding-Index, Vektorsuche, Query-UI
 │   ├── hygiene/                # M9: Sehverhalten-Report, Unsubscribe-Flow
 │   ├── knowledge/              # M11: Notizen, Wiki-Link-Parser/Resolver, Konzepte, Backlinks, Graph
+│   ├── home/                   # Home-Tab: Rails (Weiterschauen, Watch Later), VideoCard
 │   └── shell/                  # App-Shell: SideNav (Rail/Sidebar), Nav-Items, Platzhalter-Screens
 ├── core/
 │   ├── ai-engine/              # M4: LLMEngine-Interface + Backends + Modell-Registry

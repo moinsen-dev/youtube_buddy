@@ -1,4 +1,4 @@
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, primaryKey, real, sqliteTable, text, index } from 'drizzle-orm/sqlite-core';
 
 /**
  * Initial schema — cross-cutting tables only (ARCHITECTURE.md §4,
@@ -45,6 +45,25 @@ export const videos = sqliteTable('videos', {
   description: text('description'),
   updatedAt: integer('updated_at').notNull(),
 });
+
+// --- M2: Player & Watch-Tracking (ARCHITECTURE.md §4) ---
+
+export const watchSessions = sqliteTable(
+  'watch_sessions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => videos.id),
+    startedAt: integer('started_at').notNull(),
+    endedAt: integer('ended_at'),
+    positionSec: integer('position_sec').notNull().default(0),
+    percentWatched: real('percent_watched').notNull().default(0),
+    /** 'player' | 'manual' | 'takeout' */
+    source: text('source').notNull().default('player'),
+  },
+  (table) => [index('idx_watch_sessions_video_started').on(table.videoId, table.startedAt)],
+);
 
 export const playlists = sqliteTable('playlists', {
   id: text('id').primaryKey(),
