@@ -19,6 +19,7 @@ docs/PRD.md          # Module M1–M11, MoSCoW, Nicht-Ziele, Risiken, Metriken
 docs/DESIGN.md       # Design-Tokens, Komponenten, Wireframes (§5), Flows
 docs/ARCHITECTURE.md # Tech-Stack, Ordnerstruktur, KI-Engine, Datenmodell, Plattform-Matrix
 docs/ROADMAP.md      # Phasen 0–12 mit Scope, Abhängigkeiten, Exit-Kriterien
+docs/AGENT-TOOLING.md # Inventar & Betrieb der Agent-Werkzeuge (MCPs, Skills, CLIs, Expo/EAS)
 prototype/           # Statischer HTML/CSS-Klickprototyp (kein Build)
 STATE.md             # Aktueller Arbeitsstand (wird fortlaufend gepflegt)
 ```
@@ -37,6 +38,25 @@ STATE.md             # Aktueller Arbeitsstand (wird fortlaufend gepflegt)
 - **YouTube-Compliance:** Wiedergabe nur via IFrame-Player; kein Video-/Audio-Download; kein Hintergrund-Playback; kein `search.list` (Quota).
 - **Quota-Disziplin:** Cache-first, Batching, jeder API-Call deklariert Unit-Kosten (`quota_log`).
 - **Keine Git-Mutationen ohne Freigabe:** Commits/Pushes nur auf ausdrücklichen Wunsch; niemals `git reset --hard`, Force-Push oder Löschen von Branches ohne explizite Anweisung.
+
+## Agent-Tooling (kimi-code, YOLO-Betrieb)
+
+Ziel: vollautonome Entwicklung ohne menschliche Interaktion. Vollständiges Inventar, Setup und Verifikationsprotokoll: `docs/AGENT-TOOLING.md`.
+
+**Verfügbar (verifiziert 2026-07-19):**
+
+- **22 Expo-Skills** (`expo-*`, `eas-*`) in `~/.agents/skills/` — vor jeder Expo-/EAS-Aufgabe den passenden Skill lesen (z. B. `expo-router`, `expo-upgrade`, `eas-workflows`).
+- **MCPs:** `chrome-devtools` ✅ (Web-Verifikation), `patrol` ✅ (Flutter — hier nicht primär), `expo` ✅ **aktiv & authentifiziert** (via `mcp-remote`-Bridge; nativer HTTP-Eintrag hängt in 0.27.0 — Details `docs/AGENT-TOOLING.md` §4).
+- **CLIs:** `eas` (eingeloggt als `moinsen_uli`, Paid Plan), `maestro`, `gh`, Xcode 26.6 + iPhone-Sims, Android SDK + AVD `Pixel_9a`, Java 17, CocoaPods, node 22.
+
+**Regeln für autonomen Betrieb:**
+
+- Expo-/EAS-Endpunkte (`mcp.expo.dev`, `api.expo.dev`) sind reines **Build-Time-Tooling**, keine App-Runtime-Endpunkte — die Local-only-Whitelist (PRD §7) bleibt unverändert.
+- Ohne Rückfrage erlaubt: lokale Builds/Simulatoren, Tests, Lint, `npx expo install`, EAS-Builds/Workflows lesen und starten.
+- Nur mit Freigabe: Store-Submits (`eas submit`, `build_submit`), öffentliche Review-Antworten (App Store/Play), EAS Update auf `production`, Git-Mutationen.
+- UI-Verifikation autonom: Maestro-Flows + Screenshots (Expo-MCP `automation_*` ab Phase 0 via `expo-mcp`); Web via chrome-devtools-MCP.
+
+**Erledigt (2026-07-19):** Expo-OAuth-Login; `expo`-MCP ist einsatzbereit. Hinweis: zwei Produktlinien — Legacy-Python `kimi-cli` (PyPI, 1.4x) vs. aktives Node-`kimi-code` (Homebrew, **0.27.0 = aktuell**, kein Upgrade nötig); aktive MCP-Config ist `~/.kimi-code/mcp.json`. Details: `docs/AGENT-TOOLING.md` §4–§5.
 
 ## Konventionen (ab Phase 0)
 
