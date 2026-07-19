@@ -18,7 +18,7 @@ Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualis
 | `docs/ROADMAP.md` v1.1 | ✅ | 13 Phasen (0–12), Exit-Kriterien, Risiken |
 | `prototype/` (HTML/CSS) | ✅ | 9 Seiten, im Browser verifiziert (mobil 375 px / Tablet 800 px / Desktop 1440 px, Console fehlerfrei, Links ok) |
 | `AGENTS.md` | ✅ | Arbeitsweise, harte Regeln, Konventionen |
-| GitHub-Repo | ✅ | `moinsen-dev/youtube_buddy` (private), Initial-Commit auf `develop` |
+| GitHub-Repo | ✅ | `moinsen-dev/youtube_buddy` (**public**), Initial-Commit auf `develop` |
 
 ## Entscheidungs-Log (User-Entscheidungen)
 
@@ -31,16 +31,16 @@ Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualis
 | 2026-07-19 | Wissensbasis (M11) volle Tiefe in v1: Wiki-Links, Backlinks, **Graph**, Vault-Export | Nur Export / ohne Graph |
 | 2026-07-19 | Guide = Checklisten-Übersicht **+** Vollbild-Schrittkarten (+TTS als Should) | Nur Checkliste / nur Karten |
 | 2026-07-19 | Navigation: Tab „Wissen" ersetzt „Karten" (5 Tabs) | 6 Tabs / unter „Mehr" |
-| 2026-07-19 | Bundle ID `dev.moinsen.youtubebuddy` | `devv.moinsen.youtube_buddy` (Tippfehler + Unterstrich auf iOS ungültig — bitte bestätigen) |
+| 2026-07-19 | Bundle ID `dev.moinsen.youtubebuddy` (bestätigt) | `devv.moinsen.youtube_buddy` (Tippfehler + Unterstrich auf iOS ungültig) |
+| 2026-07-19 | GitHub-Repo **public** | private (Initial-Default) |
 
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
-1. Bundle ID final bestätigen (s. Entscheidungs-Log, letzte Zeile).
-2. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
-3. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3 (Fehlerquote der Untertitel-Extraktion).
-4. Finales Chat-Modell — Benchmark in Phase 4 (Qwen3-4B vs. Gemma-3-4B vs. Llama-3.2-3B).
-5. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
-6. Datentransfer Phone → TV — Entscheidung in Phase 12.
+1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
+2. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3 (Fehlerquote der Untertitel-Extraktion).
+3. Finales Chat-Modell — Benchmark in Phase 4 (Qwen3-4B vs. Gemma-3-4B vs. Llama-3.2-3B).
+4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
+5. Datentransfer Phone → TV — Entscheidung in Phase 12.
 
 ## Nächste Schritte (Phase 0 — Fundament)
 
