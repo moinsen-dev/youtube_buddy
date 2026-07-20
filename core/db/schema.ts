@@ -261,3 +261,34 @@ export const noteLinks = sqliteTable(
     index('idx_note_links_dst').on(table.dstNoteId),
   ],
 );
+
+// --- M7: Reise-Modul (ARCHITECTURE.md §4) ---
+
+export const trips = sqliteTable('trips', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  noteId: integer('note_id').references(() => notes.id),
+  createdAt: integer('created_at').notNull(),
+});
+
+export type GeocodeStatus = 'pending' | 'ok' | 'manual' | 'failed';
+
+export const tripPlaces = sqliteTable(
+  'trip_places',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tripId: integer('trip_id')
+      .notNull()
+      .references(() => trips.id),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => videos.id),
+    name: text('name').notNull(),
+    lat: real('lat'),
+    lon: real('lon'),
+    sourceSec: integer('source_sec'),
+    position: integer('position').notNull(),
+    geocodeStatus: text('geocode_status').$type<GeocodeStatus>().notNull().default('pending'),
+  },
+  (table) => [index('idx_trip_places_trip').on(table.tripId, table.position)],
+);

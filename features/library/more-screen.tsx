@@ -1,8 +1,10 @@
 import Constants from 'expo-constants';
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getDb } from '@/core/db';
+import { getSetting, setSetting } from '@/core/db/repositories';
 import { useTheme } from '@/core/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { ModelSection } from '@/features/library/model-section';
@@ -17,6 +19,26 @@ export function MoreScreen() {
   const { email, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const version = Constants.expoConfig?.version ?? '—';
+  const [geocodingOptIn, setGeocodingOptIn] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const db = await getDb();
+      if (!cancelled && db) {
+        setGeocodingOptIn((await getSetting(db, 'geocoding_opt_in')) === 'true');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleGeocoding = useCallback(async (value: boolean) => {
+    setGeocodingOptIn(value);
+    const db = await getDb();
+    if (db) await setSetting(db, 'geocoding_opt_in', value ? 'true' : 'false');
+  }, []);
 
   return (
     <ScrollView
@@ -62,6 +84,37 @@ export function MoreScreen() {
 
       <ModelSection />
 
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.bgElevated,
+            borderColor: theme.colors.lineSubtle,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.lg,
+          },
+        ]}
+      >
+        <Text style={[theme.typography.title3, { color: theme.colors.textPrimary }]}>Netzwerk</Text>
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleText}>
+            <Text style={[theme.typography.bodyStrong, { color: theme.colors.textPrimary }]}>
+              Online-Geocoding (Opt-in)
+            </Text>
+            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              Ortsnamen → Koordinaten via Nominatim/OpenStreetMap. Karten-Tiles (OSM) werden beim
+              Ansehen der Route geladen. Alles andere bleibt lokal.
+            </Text>
+          </View>
+          <Switch
+            value={geocodingOptIn}
+            onValueChange={(value) => void toggleGeocoding(value)}
+            trackColor={{ false: theme.colors.lineSubtle, true: theme.colors.accentPrimary }}
+            accessibilityLabel="Online-Geocoding aktivieren"
+          />
+        </View>
+      </View>
+
       <QuotaMeter />
 
       <Text style={[theme.typography.caption, { color: theme.colors.textTertiary }]}>
@@ -88,5 +141,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toggleText: {
+    flex: 1,
+    gap: 4,
   },
 });

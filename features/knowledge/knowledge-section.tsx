@@ -7,6 +7,8 @@ import { getDb } from '@/core/db';
 import {
   getAnalysis,
   getNoteForVideo,
+  getSetting,
+  getTripForVideo,
   listAllNotes,
   listConcepts,
   listFlashcardsForVideo,
@@ -14,6 +16,7 @@ import {
 } from '@/core/db/repositories';
 import { saveNoteWithLinks, updateNoteBodyWithLinks } from '@/core/markdown/note-store';
 import { useTheme } from '@/core/theme';
+import { extractTripForVideo } from '@/features/travel/extract-trip';
 
 import { generateKnowledge } from './generate';
 import { MarkdownEditor } from './markdown-editor';
@@ -30,7 +33,9 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
   const [hasAnalysis, setHasAnalysis] = useState(false);
   const [cardCount, setCardCount] = useState(0);
   const [guideId, setGuideId] = useState<number | null>(null);
+  const [tripId, setTripId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tripBusy, setTripBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [noteId, setNoteId] = useState<number | null>(null);
@@ -44,6 +49,8 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
     setCardCount((await listFlashcardsForVideo(db, videoId)).length);
     const guide = (await listGuides(db)).find((row) => row.videoId === videoId);
     setGuideId(guide?.id ?? null);
+    const trip = await getTripForVideo(db, videoId);
+    setTripId(trip?.id ?? null);
     const note = await getNoteForVideo(db, videoId, 'free');
     setNoteId(note?.id ?? null);
     setNoteText(note?.bodyMd ?? '');
@@ -96,6 +103,28 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
       abortRef.current = null;
     }
   }, [videoId, videoTitle, reload]);
+
+  const runTripExtraction = useCallback(async () => {
+    const engine = peekEngine();
+    if (!engine?.loadedModelId) {
+      setError('Kein Modell geladen — erst im Mehr-Tab ein Modell laden.');
+      return;
+    }
+    const db = await getDb();
+    if (!db) return;
+    setTripBusy(true);
+    setError(null);
+    try {
+      const geocode = (await getSetting(db, 'geocoding_opt_in')) === 'true';
+      const result = await extractTripForVideo(await getEngine(), db, videoId, { geocode });
+      setTripId(result.tripId);
+      router.push(`/trip/${result.tripId}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setTripBusy(false);
+    }
+  }, [videoId, router]);
 
   const saveNote = useCallback(
     async (text: string) => {
@@ -200,6 +229,39 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
           )}
         </View>
       )}
+
+      {hasAnalysis &&
+        (tripId ? (
+          <Pressable
+            onPress={() => router.push(`/trip/${tripId}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Reise-Route öffnen"
+            style={{ minHeight: theme.touchTarget.default, justifyContent: 'center' }}
+          >
+            <Text style={[theme.typography.bodyStrong, { color: theme.colors.accentPrimary }]}>
+              ▸ Reise-Route öffnen
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => void runTripExtraction()}
+            disabled={tripBusy || peekEngine()?.loadedModelId == null}
+            accessibilityRole="button"
+            accessibilityLabel="Reise-Route extrahieren"
+            style={({ pressed }) => [
+              styles.tripLink,
+              {
+                minHeight: theme.touchTarget.default,
+                justifyContent: 'center',
+                opacity: tripBusy || peekEngine()?.loadedModelId == null ? 0.5 : 1,
+              },
+            ]}
+          >
+            <Text style={[theme.typography.bodyStrong, { color: theme.colors.accentPrimary }]}>
+              {tripBusy ? 'Extrahiere Orte…' : '▸ Reise-Route extrahieren'}
+            </Text>
+          </Pressable>
+        ))}
       {error && (
         <Text style={[theme.typography.caption, { color: theme.colors.danger }]}>{error}</Text>
       )}
@@ -242,5 +304,8 @@ const styles = StyleSheet.create({
     padding: 10,
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  tripLink: {
+    alignSelf: 'flex-start',
   },
 });

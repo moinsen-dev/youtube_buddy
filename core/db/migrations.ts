@@ -81,6 +81,14 @@ export const migrations: Migration[] = [
       'CREATE INDEX IF NOT EXISTS idx_notes_type_updated ON notes (type, updated_at)',
     ],
   },
+  {
+    id: '0008_m7_travel',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS trips (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, note_id INTEGER REFERENCES notes(id), created_at INTEGER NOT NULL)',
+      "CREATE TABLE IF NOT EXISTS trip_places (id INTEGER PRIMARY KEY AUTOINCREMENT, trip_id INTEGER NOT NULL REFERENCES trips(id), video_id TEXT NOT NULL REFERENCES videos(id), name TEXT NOT NULL, lat REAL, lon REAL, source_sec INTEGER, position INTEGER NOT NULL, geocode_status TEXT NOT NULL DEFAULT 'pending')",
+      'CREATE INDEX IF NOT EXISTS idx_trip_places_trip ON trip_places (trip_id, position)',
+    ],
+  },
 ];
 
 /**

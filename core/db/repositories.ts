@@ -16,11 +16,14 @@ import {
   playlistItems,
   settings,
   subscriptions,
+  tripPlaces,
+  trips,
   videos,
   watchSessions,
   transcriptChunks,
   transcripts,
   type AnalysisKind,
+  type GeocodeStatus,
   type NoteType,
 } from '@/core/db/schema';
 import type * as schema from '@/core/db/schema';
@@ -721,4 +724,75 @@ export async function listAllNotes(db: Db, limit = 500): Promise<NoteRow[]> {
 
 export async function listAllNoteLinks(db: Db): Promise<NoteLinkRow[]> {
   return db.select().from(noteLinks);
+}
+
+// --- travel (M7) ---
+
+export interface TripRow {
+  id: number;
+  title: string;
+  noteId: number | null;
+  createdAt: number;
+}
+
+export interface TripPlaceRow {
+  id: number;
+  tripId: number;
+  videoId: string;
+  name: string;
+  lat: number | null;
+  lon: number | null;
+  sourceSec: number | null;
+  position: number;
+  geocodeStatus: GeocodeStatus;
+}
+
+export async function insertTrip(db: Db, row: Omit<TripRow, 'id'>): Promise<number> {
+  const result = await db.insert(trips).values(row);
+  return Number(result.lastInsertRowId);
+}
+
+export async function getTrip(db: Db, id: number): Promise<TripRow | null> {
+  const rows = await db.select().from(trips).where(eq(trips.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getTripForVideo(db: Db, videoId: string): Promise<TripRow | null> {
+  const places = await db
+    .select({ tripId: tripPlaces.tripId })
+    .from(tripPlaces)
+    .where(eq(tripPlaces.videoId, videoId))
+    .limit(1);
+  if (places.length === 0) return null;
+  return getTrip(db, places[0].tripId);
+}
+
+export async function listTrips(db: Db): Promise<TripRow[]> {
+  return db.select().from(trips).orderBy(desc(trips.createdAt));
+}
+
+export async function insertTripPlaces(db: Db, rows: Omit<TripPlaceRow, 'id'>[]): Promise<void> {
+  for (const row of rows) {
+    await db.insert(tripPlaces).values(row);
+  }
+}
+
+export async function listTripPlaces(db: Db, tripId: number): Promise<TripPlaceRow[]> {
+  return db
+    .select()
+    .from(tripPlaces)
+    .where(eq(tripPlaces.tripId, tripId))
+    .orderBy(tripPlaces.position);
+}
+
+export async function updateTripPlace(
+  db: Db,
+  id: number,
+  patch: Partial<Pick<TripPlaceRow, 'lat' | 'lon' | 'geocodeStatus'>>,
+): Promise<void> {
+  await db.update(tripPlaces).set(patch).where(eq(tripPlaces.id, id));
+}
+
+export async function updateTripNoteId(db: Db, id: number, noteId: number): Promise<void> {
+  await db.update(trips).set({ noteId }).where(eq(trips.id, id));
 }

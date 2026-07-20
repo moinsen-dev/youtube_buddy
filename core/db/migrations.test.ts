@@ -62,6 +62,7 @@ const MIGRATION_IDS = [
   '0005_m5_analyses',
   '0006_m6_knowledge',
   '0007_m11_knowledge_base',
+  '0008_m7_travel',
 ];
 
 describe('core/db migration runner', () => {
@@ -105,6 +106,12 @@ describe('core/db migration runner', () => {
     ).toBe(true);
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE INDEX IF NOT EXISTS idx_note_links_dst')),
+    ).toBe(true);
+    expect(db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS trips'))).toBe(
+      true,
+    );
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS trip_places')),
     ).toBe(true);
     expect(
       db.executedSql.some((sql) =>

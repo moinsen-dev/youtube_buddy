@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-20
-**Aktuelle Phase:** **Phase 7 (Wissensbasis, M11) abgeschlossen ✅** → nächster Schritt **Phase 8 (Reise-Modul, M7)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 8 (Reise-Modul, M7) abgeschlossen ✅** → nächster Schritt **Phase 9 (Semantische Suche, M8)** gemäß `docs/ROADMAP.md`
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -234,21 +234,45 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 3. **`@types/d3-force` fehlte** (Paket ist typlos) — als devDependency ergänzt.
 4. **run:android-Timeouts hängen nach erfolgreichem Install** — APK/lastUpdateTime prüfen, dann Metro separat als Hintergrund-Task starten (`EXPO_UNSTABLE_MCP_SERVER=1 npx expo start --port 8081`).
 
+| **Phase 8 — Reise-Modul (M7)** | ✅ | **Exit-Kriterien erfüllt (2026-07-20): 6 Orte aus Reise-Vlog extrahiert (≥ 4), nach Opt-in geocoded, Route mit nummerierten Pins + Polyline auf OSM-Map; Offline-Pfad mit manuellem Pinnen per Tap; Orte springen zur Video-Stelle; Trip als verlinkte Notiz** |
+
+## Phase 8 — Ergebnis (2026-07-20, abgeschlossen)
+
+**Gebaut:** Migration `0008_m7_travel` (`trips`, `trip_places` mit `geocode_status` + Index); `extract_places.v2` Template (v1 → v2: 4–8 Orte inkl. POIs/Stadtteile — v1 lieferte nur 3 Städte); `features/travel` (`extract-trip.ts`: Analyse → Trip + Places + Trip-Notiz (type `trip`); `geocoding.ts`: Nominatim-Client mit 1 req/s-Limiter, User-Agent, In-Process-Cache; `map-math.ts`: Slippy-Mercator lon/lat↔Pixel/Tile + `fitToPoints` (pure, 7 Tests); `map-view.tsx`: **OSM-Raster-Tiles + react-native-svg-Overlay** (Polyline + nummerierte Pins, Attribution) mit **explizitem User-Agent via `expo-file-system.downloadAsync` + persistentem Disk-Cache** (OSM-Policy: RN-`Image`-Default-UA wird blockiert); `trip-screen.tsx` (DESIGN 5.8: Map, Route-Liste mit Zeitstempel-Sprüngen, Offline-Badge, manuelles Pinnen per Tap mit Status `manual`); Opt-in-Toggle „Online-Geocoding" im Mehr-Tab (`settings.geocoding_opt_in`); CTA „Reise-Route extrahieren/öffnen" im Video-Detail (Wissen-Sektion). Whitelist-ADR: `tile.openstreetmap.org` als Opt-in (PRD §7.4, Karten-Pivot statt react-native-maps — kein API-Key, kein Rebuild, identisch nativ + Web). 98 Tests + tsc + eslint 0 Fehler.
+
+**Verifikations-Matrix (Exit-Kriterien, Reise-Vlog „JAPAN TRAVEL DIARIES", 39:10):**
+
+| Kriterium                     | Beleg                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ≥ 4 Orte extrahiert           | ✅ 6: Osaka (0:00), Osaka Castle (1:40), Umeda Sky Building (3:20), Tokyo (13:48), Tokyo Tower (15:00), Shibuya Crossing (16:40) — `extract_places.v2` |
+| Nach Opt-in geocoded          | ✅ Alle 6 via Nominatim `ok` mit korrekten Koordinaten (DB-verifiziert)                                                                                |
+| Route dargestellt             | ✅ OSM-Tiles (Japan) + Polyline Osaka → Tokyo + nummerierte Pins + Attribution; Tiles mit explizitem UA + Disk-Cache (403 „access blocked" behoben)    |
+| Ohne Opt-in: manuelles Pinnen | ✅ Toggle OFF → Badge „Offline — Orte per Tap manuell setzen"; 📍 → Tap auf Karte → `lat/lon` mit Status `manual` persistiert                          |
+| Ort springt zur Video-Stelle  | ✅ Zeitstempel-Chip 13:48 → Video-Detail mit `?t=828`                                                                                                  |
+| Trip als verlinkte Notiz      | ✅ `notes` type `trip` („Reise: JAPAN TRAVEL DIARIES…")                                                                                                |
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **Karten-Pivot (ADR PRD §7.4):** OSM-Tiles + SVG statt react-native-maps — kein Google-Maps-Key nötig (gcloud-Auth war abgelaufen), kein nativer Rebuild, gleiche Tile-Math nativ + Web.
+2. **OSM 403 „access blocked":** RN `Image` sendet einen generischen Agenten (wird blockiert); Fix = Tiles via `expo-file-system.downloadAsync` mit explizitem `User-Agent` + persistenter Disk-Cache (policy-konform). Fresco-Cache hatte die 403-Tiles zusätzlich zwischengespeichert (Cache-Clear nötig nach dem Fix).
+3. **extract_places.v1 → v2** (Golden-Set-Prinzip): v1 lieferte nur Städte (3 < 4 Exit); v2 mit POIs/Stadtteilen → 6 Orte.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
 2. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3: **nicht nötig** (Fehlerquote 0/10), bleibt Could-Option.
 3. ~~Finales Chat-Modell~~ — **entschieden in Phase 4** (Qwen3-4B ≥ 6 GB, Llama-3.2-3B 4-GB-Tier).
-4. Konzept-Dedup-Qualität — **erste Evidenz gut** (6 saubere Konzepte); Golden-Set-Gate bei zweiter Analyse desselben Themas (Dedup-Pfad) noch ausstehend; ggf. Embedding-Clustering in Phase 9.
+4. Konzept-Dedup-Qualität — **erste Evidenz gut** (6 saubere Konzepte); Golden-Set-Gate bei Dedup-Pfad ausstehend; ggf. Embedding-Clustering in Phase 9.
 5. Datentransfer Phone → TV — **per ADR gelöst ab Phase 10.5** (E2E-Sync via Firebase).
-6. **Android-Perf + P50-Analysezeit auf physischem Gerät** (≥ 10 Tok/s, P50 < 90 s) — Emulator-Artefakte.
-7. **iOS-Verifikation Phase 5–7** — expo-speech-Rebuild + Consent-Tap ausstehend.
+6. **Android-Perf + P50-Analysezeit auf physischem Gerät** — Emulator-Artefakte.
+7. **iOS-Verifikation Phase 5–8** — expo-speech-Rebuild + Consent-Tap ausstehend.
 8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5).
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
-10. **Graph-Benchmark 1.000 Nodes** — sobald der Bestand wächst; aktuell < 10 Nodes, kein Perf-Problem absehbar.
+10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
 
-## Nächste Schritte (Phase 8 — Reise-Modul, M7)
+## Nächste Schritte (Phase 9 — Semantische Suche, M8)
 
-1. Template `extract_places` (Orte/POIs/Route mit Zeitstempeln) + `trip_places`-Tabelle; Geocoding **nur bei Opt-in** (Nominatim, 1 req/s, Cache, User-Agent), alternativ manuelles Pinning offline.
-2. MapView-Card (DESIGN 5.8: Polyline + nummerierte Pins, Ortsliste mit Video-Sprüngen); Trip-Notiz (type `trip`) in der Wissensbasis.
-3. **Exit:** Reisevideo liefert Orte + Route auf der Karte; Offline-Pfad (ohne Opt-in) funktioniert mit manuellem Pinning; Quellen springen zum Zeitstempel.
+1. Embedding-Backend-Entscheidung per Benchmark (llama.rn-Embedding vs. transformers.js, multilingual-e5-small); `LLMEngine.embed` implementieren; `embeddings`-Tabelle + kNN (sqlite-vec vs. JS-Index, messen).
+2. Index-Job (idle, batch) über Chunks/Notizen/Konzepte/Analysen; FTS5 als Hybrid/Fallback über `transcript_chunks.text` + `notes.body_md`.
+3. Suche-Screen (DESIGN 5.9): Hybrid-Suche, Typ-Icons (Video/Notiz/Konzept), Filter (Kanal, Zeitraum, Sehquote), Treffer → Detail mit Zeitstempel-Sprung.
+4. **Exit:** Suche nach „Kaiju" findet Video + Konzept mit Sprung; Hybrid > reine FTS; Index vollständig in < 5 min (Referenzbestand).

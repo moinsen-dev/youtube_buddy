@@ -209,6 +209,7 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 
 ### 7.4 Geocoding vs. Local-Only
 - Offline-Geocoding ganzer Welt ist unpraktikabel. **Entscheidung:** Opt-in Online-Geocoding (Nominatim, 1 Request/Ort, gecacht), klar als einzige neben Google bestehende Netzverbindung gekennzeichnet; Nutzer kann Orte auch manuell pinnen.
+- **Ergänzung (2026-07-20, Karten-Pivot):** Die Reise-Map rendert **OSM-Raster-Tiles** (`tile.openstreetmap.org`, mit OSM-Attribution im UI) + SVG-Overlay statt react-native-maps/Google Maps — kein API-Key, kein natives Modul, identische Darstellung auf nativ + Web. Tile-Abrufe erfolgen nur beim Ansehen einer Route (gecacht durch den HTTP-Client), nicht im Hintergrund. Damit gehören `nominatim.openstreetmap.org` **und** `tile.openstreetmap.org` zur Opt-in-Whitelist; alles andere bleibt unverändert local-only.
 
 ### 7.5 Rechtliches/Compliance (kurz)
 - App „frisiert" keinen YouTube-Content, speichert keine Videos, sondern Metadaten/Transkripte zum persönlichen Gebrauch. Dennoch: Untertitel-Extraktion ist die einzige echte Grauzone → Risiko akzeptiert, Fallback geplant.
