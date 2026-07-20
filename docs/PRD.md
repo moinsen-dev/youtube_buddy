@@ -223,14 +223,14 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 | Punkt | Entscheidung | Begründung |
 |---|---|---|
 | Server-Stack | **Firebase** (im bestehenden GCP-Projekt `youtube-buddy-moinsen`): Auth (Google-Provider), Firestore (Sync-Entitäten), Cloud Functions EU (Groq-Proxy) | Gleiches GCP-Projekt wie YouTube-API/OAuth → identische Google-Identität ohne Zweit-Auth; Firestore-Dokumente + Security Rules passen E2E-Ciphertext; erprobter Moinsen-Stack (`expo-firebase`/menulens: Firebase-MCP via CLI-Login, dev/prod-Umgebungen, Rules-Workflow, Emulator). **Nicht** genutzt: Crashlytics/Analytics (Local-only-Regel) |
-| Cloud-LLM | **Groq** (Llama-70B-Klasse), Zugriff ausschließlich via Cloud Function (API-Key bleibt serverseitig) | Großer Qualitätssprung ggü. 3–4B on-device, sehr schnell, günstig; gleiche Prompt-Templates + Golden-Set-Gate wie on-device |
+| Cloud-LLM | **Firebase AI (Gemini)** — Gemini-Flash-Klasse, Zugriff ausschließlich via Cloud Function (EU) im selben GCP-Projekt | Ein Projekt/eine Billing/IAM mit YouTube-API + Firebase Auth; kein Dritt-Provider-Key nötig; strukturierte JSON-Outputs via `responseSchema` (passt zum bestehenden Schema-Enforcement); großer Qualitätssprung ggü. 3–4B on-device |
 | Payment | **RevenueCat** | Store-übergreifende Subscriptions + Entitlements ohne Eigenbau; bewährte Firebase-Kombination |
 | Sync-Modell | E2E (Client-seitige Verschlüsselung, Passphrase/Device-Key + Recovery-Code), Firestore-Dokumente pro Entität mit `updated_at`-LWW; Modelle, Caches, Transkript-Rohdaten bleiben lokal | Datenschutz by Design bleibt gewahrt (Server = blind); LWW reicht für Einzelnutzer-Sync |
 | Cloud-Analyse | Drittes Backend `CloudEngine` hinter dem `LLMEngine`-Interface; Badge „Cloud (Opt-in)" als Invers zum On-Device-Badge | Keine Feature-Forks — Engine-Abstraktion (§3) trägt das ohne UI-Sonderfälle |
 
-**Whitelist-Erweiterung (Opt-in, erst ab Phase 10.5 aktiv):** Firebase-Endpunkte (`identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firestore.googleapis.com`, `*.cloudfunctions.net`), Groq API (`api.groq.com` — nur von der Cloud Function aus), RevenueCat API (`api.revenuecat.com`) + Store-Belege. Kein Analytics-/Crash-SDK, kein eigenes Tracking — auch im Pro-Tier nicht.
+**Whitelist-Erweiterung (Opt-in, erst ab Phase 10.5 aktiv):** Firebase-Endpunkte (`identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `firestore.googleapis.com`, `*.cloudfunctions.net`), RevenueCat API (`api.revenuecat.com`) + Store-Belege. Gemini-Zugriff erfolgt ausschließlich serverseitig aus der Cloud Function (kein neuer App-Endpunkt). Kein Analytics-/Crash-SDK, kein eigenes Tracking — auch im Pro-Tier nicht.
 
-**Offene Detailentscheidungen für Phase 10.5:** Schlüsselableitung (Passphrase vs. Device-Key + Recovery), Konflikt-UI bei LWW-Kollisionen, Pro-Preis/Scope-Abgrenzung, Groq-Modell-Pinning via Golden-Set-Benchmark, dev/prod-Projektstruktur (Stack-Konvention: `youtube-buddy-moinsen-dev` neu, Bestandsprojekt wird prod).
+**Offene Detailentscheidungen für Phase 10.5:** Schlüsselableitung (Passphrase vs. Device-Key + Recovery), Konflikt-UI bei LWW-Kollisionen, Pro-Preis/Scope-Abgrenzung, Gemini-Modell-Pinning via Golden-Set-Benchmark, dev/prod-Projektstruktur (Stack-Konvention: `youtube-buddy-moinsen-dev` neu, Bestandsprojekt wird prod).
 
 ---
 
