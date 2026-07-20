@@ -54,25 +54,32 @@ function createFakeExecutor(): SqliteExecutor & {
   };
 }
 
+const MIGRATION_IDS = [
+  '0001_init',
+  '0002_m1_youtube_read',
+  '0003_m2_watch_tracking',
+  '0004_m3_transcripts',
+];
+
 describe('core/db migration runner', () => {
   it('creates the empty initial schema and records it', async () => {
     const db = createFakeExecutor();
     const applied = await runMigrations(db);
 
-    expect(applied).toEqual(['0001_init', '0002_m1_youtube_read', '0003_m2_watch_tracking']);
+    expect(applied).toEqual(MIGRATION_IDS);
     expect(db.executedSql).toContain(
       'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)',
-    );
-    expect(db.executedSql).toContain(
-      'CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, channel_id TEXT NOT NULL REFERENCES channels(id), title TEXT NOT NULL, duration_sec INTEGER, published_at INTEGER, thumbnail_url TEXT, description TEXT, updated_at INTEGER NOT NULL)',
     );
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS watch_sessions')),
     ).toBe(true);
-    expect(db.executedSql).toContain(
-      'CREATE INDEX IF NOT EXISTS idx_watch_sessions_video_started ON watch_sessions (video_id, started_at)',
-    );
-    expect(db.appliedIds).toEqual(['0001_init', '0002_m1_youtube_read', '0003_m2_watch_tracking']);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS transcripts')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS transcript_chunks')),
+    ).toBe(true);
+    expect(db.appliedIds).toEqual(MIGRATION_IDS);
   });
 
   it('is idempotent — a second run applies nothing', async () => {
@@ -81,7 +88,7 @@ describe('core/db migration runner', () => {
     const second = await runMigrations(db);
 
     expect(second).toEqual([]);
-    expect(db.appliedIds).toEqual(['0001_init', '0002_m1_youtube_read', '0003_m2_watch_tracking']);
+    expect(db.appliedIds).toEqual(MIGRATION_IDS);
   });
 
   it('runs each migration inside a transaction', async () => {

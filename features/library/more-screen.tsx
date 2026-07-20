@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/core/theme';
 import { useAuth } from '@/features/auth/auth-context';
+import { ModelSection } from '@/features/library/model-section';
 import { QuotaMeter } from '@/features/library/quota-meter';
 
 /**
@@ -58,6 +59,8 @@ export function MoreScreen() {
           </Text>
         </Pressable>
       </View>
+
+      <ModelSection />
 
       <QuotaMeter />
 

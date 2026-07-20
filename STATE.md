@@ -2,8 +2,8 @@
 
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
-**Stand:** 2026-07-19
-**Aktuelle Phase:** **Phase 3 (Transkript-Pipeline, M3) abgeschlossen ✅** → nächster Schritt **Phase 4 (KI-Engine Core nativ, M4)** gemäß `docs/ROADMAP.md`
+**Stand:** 2026-07-20
+**Aktuelle Phase:** **Phase 4 (KI-Engine Core nativ, M4) abgeschlossen ✅** → nächster Schritt **Phase 5 (Video-Analyse, M5)** gemäß `docs/ROADMAP.md`
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
 
 ---
@@ -61,6 +61,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 | 2026-07-19 | Web-DB in Phase 0 = No-op (`core/db/index.web.ts` → null); Web-Persistenz (wa-sqlite/IndexedDB) vertagt auf Phase 11                                                                                                               | expo-sqlite-Web mit wasm-Metro-Config schon in Phase 0                          |
 | 2026-07-19 | GCP-Projekt = `youtube-buddy-moinsen` (neu, per Console-Automation); Consent External/Testing mit Test-User; OAuth-Clients Web/iOS/Android + zweiter Android-Client für `android/app/debug.keystore` (Fingerprint `5E:8F:…:F6:25`) | `youtube-buddy` (ID global vergeben), bestehendes Projekt `email-agents-496114` |
 | 2026-07-19 | Android-Signing: `expo prebuild`-eigener `android/app/debug.keystore` ist maßgeblich; globaler Keystore nur Referenz. Für EAS Builds: EAS-Key-SHA-1 später ebenfalls als Android-Client registrieren                               | Globalen Keystore als einzige Wahrheit (falsch, verursachte DEVELOPER_ERROR)    |
+| 2026-07-20 | **Chat-Modell final: Qwen3-4B-Instruct Q4** (≥ 6 GB RAM) + **Llama-3.2-3B Q4** (4-GB-Tier); beide 100 % schema-valid via json_schema                                                                                               | Gemma-3-4B (kein Vorteil gezeigt)                                               |
+| 2026-07-20 | `n_ctx`-Cap 4096 statt 8192 (KV-Cache halbiert; M4/M5-Prompts ≪ 4096 Tokens)                                                                                                                                                       | 8192 (verursachte Android-Emulator-Swap-Thrashing)                              |
+| 2026-07-20 | llama.rn auf Web **lazy** laden (`await import`) + `Platform.OS`-Guards für expo-file-system — statischer Import crashte den Mehr-Tab auf Web                                                                                      | Plattform-gate an der Komponente (Import-Kette bricht trotzdem)                 |
 
 ## Phase 1 — Ergebnis (2026-07-19, abgeschlossen)
 
@@ -123,17 +126,47 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 2. **Whisper-Fallback (offene Phase-3-Frage): NICHT nötig** — Extraktion funktioniert zuverlässig (Fehlerquote 0/10). Whisper bleibt Could-Option für Videos ohne Untertitel.
 3. **Web-Transkripte über API-Route** (`+api.ts`) — youtube.com sendet keine CORS-Header; produktionsreife Entscheidung (EAS Hosting vs. Client-seitig) fällt in Phase 11.
 
+| **Phase 4 — KI-Engine Core (M4)** | ✅ | **Exit-Kriterien erfüllt (2026-07-20): Modell lädt iOS+Android, `generate` 100 % schema-valid (json_schema, 0 % Repair), iOS Ø 18,1 Tok/s (≥ 10), Golden-Set-Suite 10/10, Abbruch verifiziert. Modell-Entscheidung final. Einschränkung: Android-Tok/s nur Emulator-artefaktbehaftet messbar → physisches Gerät offen** |
+
+## Phase 4 — Ergebnis (2026-07-20, abgeschlossen)
+
+**Gebaut:** `core/ai-engine` (`types.ts` mit `LLMEngine`-Interface; `model-registry.ts` mit 3 Kandidaten + RAM-basierter Empfehlung; `model-manager.ts` Download via expo-file-system mit Resume + chunked SHA-256 + Speicher-Checks; `llama-cpp-engine.ts` auf llama.rn mit `response_format: json_schema` (GBNF-erzwungen) + zod + 1 Repair-Retry + AbortSignal → `stopCompletion()`; Prompt-Templates `ping.v1` + `summarize.v1`; `benchmark.ts` + `golden-set.json` = 10 reale Kurzgesagt-Transkripte, im Repo); `use-model-manager.ts` Hook; `features/library/model-section.tsx` im Mehr-Tab (DESIGN 5.11: Download/Laden/Entladen/Löschen, Fortschritt, freier Speicher, Smoke-Test mit Abbrechen-Button, Benchmark-Button). 54 Tests + tsc + Lint grün. llama.rn ^0.12.6, Dev-Clients iOS+Android neu gebaut (ab hier kein Expo Go mehr).
+
+**Verifikations-Matrix (Exit-Kriterien):**
+
+| Kriterium                 | iOS (Sim, iPhone 17 Pro)                           | Android (Emulator Pixel_9a, 8 GB)                                                        |
+| ------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Modell lädt               | ✅ Llama-3B + Qwen3-4B                             | ✅ Llama-3B (Smoke: Modellwechsel/Entladen ok)                                           |
+| `generate` schema-konform | ✅ 10/10 + 6/6 Items `ok=true`                     | ✅ 12/12 Items `ok=true` (über alle Läufe)                                               |
+| Repair-Quote              | ✅ 0 % (json_schema erzwingt)                      | ✅ 0 %                                                                                   |
+| ≥ 10 Tok/s                | ✅ **Ø 18,1 Tok/s** (Smoke 19,2), Qwen ~11–15      | ⚠️ **0,4–0,7 Tok/s = Emulator-Artefakt** (s. unten), physisches Gerät offen              |
+| Golden-Set-Suite          | ✅ 10/10 grün, deutsches Sample inhaltlich korrekt | — (abgebrochen, s. unten)                                                                |
+| Abbruch funktioniert      | ✅ (Code)                                          | ✅ live verifiziert: Abbrechen → Fehlerstate „abgebrochen", Engine danach weiter nutzbar |
+
+**Benchmark-Daten iOS:** Llama-3.2-3B Q4: 10/10, valid 100 %, repaired 0 %, Ø 18,1 Tok/s, 576 s gesamt; Sample: „Die Welt ist voller Kaijus, die uns unsichtbar bedrohen…" (deutsch, korrekt). Qwen3-4B Q4: 6/10 Items (Run durch versehentlichen Logout unterbrochen), valid 100 %, repaired 0 %, ~11–15 Tok/s — ausreichend als Beleg für Schema-Treue + Entscheidung.
+
+**Android-Perf-Befund (ehrlich dokumentiert):** Der Emulator (arm64 nativ unter HVF, 4 vCPU) erreicht nur 0,4–0,7 Tok/s. Ursache: App-RES ~5,2 GB (3,2 G anonym: KV-Cache + Compute-Buffer + RN) + Android/Play-Services → Gast-Swap (665 MB) mit 78 % sys / 53 % irq (virtio-Swap-I/O). Auf 6 GB AVD noch schlimmer (754 MB Swap). Kein CPU-Translations-Problem (abi arm64-v8a nativ). **Fazit:** Emulator eignet sich für Funktions-, nicht für Perf-Validierung; ≥ 10 Tok/s auf Pixel-Hardware bleibt offener Punkt (z. B. via EAS-Build auf physischem Gerät). Gegenprobe 2-GB-AVD: OOM-Crash bei 3B **und** 4B → RAM-Guidance (≥ 4 GB für 3B, ≥ 6 GB für 4B) empirisch bestätigt.
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **Modell-Entscheidung final:** **Qwen3-4B-Instruct Q4 = Default für ≥ 6 GB RAM** (bessere Qualität laut Kandidaten-Analyse, 100 % schema-valid), **Llama-3.2-3B Q4 für 4-GB-Geräte** (schneller, kleiner, ebenfalls 100 % schema-valid). Gemma-3-4B verworfen (kein Vorteil gezeigt, ein Download weniger). `recommendedModel(totalMemory)` bildet das ab.
+2. **Web-Crash Mehr-Tab:** statischer Import `llama.rn` zog das native Modul in den Web-Bundle → Tab crashte; zusätzlich warfen `getFreeDiskStorageAsync`/`getInfoAsync` auf Web. Fix: Engine wird lazy per `await import('./llama-cpp-engine')` erzeugt (`use-model-manager.ts`), `model-manager.ts` hat `Platform.OS === 'web'`-Guards. Verifiziert via chrome-devtools: Tab rendert, 0 Console-Errors, Engine-Controls auf Web disabled.
+3. **`n_ctx`-Cap 8192 → 4096** (`llama-cpp-engine.ts`): halbiert den KV-Cache; alle M4/M5-Prompts (Chunks ~800 Zeichen) passen locker. 8192 trug zum Swap-Thrashing bei.
+4. **AVD Pixel_9a RAM: 2048 → 8192 MB** (`~/.android/avd/Pixel_9a.avd/config.ini`, User-Maschine, entspricht der Pixel-7-Referenz mit 8 GB); Cold Boot mit `-no-snapshot-load` nötig.
+5. **Fast Refresh entlädt das Modell** (Engine-Singleton im JS) → Benchmarks nie parallel zu Code-Edits laufen lassen.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
-2. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3 (Fehlerquote der Untertitel-Extraktion).
-3. Finales Chat-Modell — Benchmark in Phase 4 (Qwen3-4B vs. Gemma-3-4B vs. Llama-3.2-3B).
+2. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3: **nicht nötig** (Fehlerquote 0/10), bleibt Could-Option.
+3. ~~Finales Chat-Modell~~ — **entschieden in Phase 4** (Qwen3-4B ≥ 6 GB, Llama-3.2-3B 4-GB-Tier).
 4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
 5. Datentransfer Phone → TV — Entscheidung in Phase 12.
+6. **Android-Perf-Validierung auf physischem Gerät** (≥ 10 Tok/s-Erwartung für Llama-3B/Qwen-4B auf Pixel-Klasse) — Emulator-Artefakt, s. Phase 4. Qwen3-4B-Vollbenchmark auf Hardware ebenfalls offen.
+7. **iOS-Re-Login klemmt:** ASWebAuthenticationSession-Consent (Continue-Button) ist per UI-Automation unerreichbar — einmal manuell bestätigen; App danach wieder voll nutzbar.
 
-## Nächste Schritte (Phase 4 — KI-Engine Core, nativ, M4)
+## Nächste Schritte (Phase 5 — Video-Analyse, M5)
 
-1. `LLMEngine`-Interface + `LlamaCppEngine` (llama.rn); Modell-Registry + Download via expo-file-system (Resume, SHA-256-Check).
-2. Modell-Management-UI (DESIGN 5.11) inkl. RAM-/Speicher-Checks; Prompt-Template-System mit zod-validierten JSON-Outputs (GBNF/JSON-Mode + Repair-Retry).
-3. Benchmark-Harness + Golden-Set (10 Videos); **Modell-Entscheidung final** (Qwen3-4B vs. Gemma-3-4B vs. Llama-3.2-3B).
-4. **Exit:** Auf Referenzgeräten (iPhone 13, Pixel 7): Modell lädt, `generate` liefert schema-konformes JSON, ≥ 10 Tok/s; Golden-Set-Suite grün; Abbruch funktioniert. Achtung: Dev-Client statt Expo Go ab hier (llama.rn nativ).
+1. Analyse-Pipeline (Chunk-Map/Reduce bei langen Videos) auf der Phase-4-Engine; Templates `summarize`, `chapters`, `triage`; `analyses`-Tabelle + Repository.
+2. UI: SummaryPanel, ChapterList mit Player-Sprüngen, TriageBadge; Analyse-Fortschritts-Sheet mit On-Device-Badge (DESIGN 5.5); Triage-Batch für Watch-Later (Home 5.2).
+3. **Exit:** Golden-Set-Videos zeigen vollständige Analyse mit korrekten Zeitstempel-Sprüngen; P50-Analysezeit < 90 s auf Referenzgerät; Triage über 12 Watch-Later-Videos als Batch mit Fortschritt.

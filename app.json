@@ -51,7 +51,8 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "llama.rn"
     ],
     "experiments": {
       "typedRoutes": true,
