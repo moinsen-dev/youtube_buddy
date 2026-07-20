@@ -48,9 +48,10 @@ STATE.md             # Aktueller Arbeitsstand (wird fortlaufend gepflegt)
 
 Ziel: vollautonome Entwicklung ohne menschliche Interaktion. Vollständiges Inventar, Setup und Verifikationsprotokoll: `docs/AGENT-TOOLING.md`.
 
-**Verfügbar (verifiziert 2026-07-19):**
+**Verfügbar (verifiziert 2026-07-19, erweitert 2026-07-20):**
 
 - **22 Expo-Skills** (`expo-*`, `eas-*`) in `~/.agents/skills/` — vor jeder Expo-/EAS-Aufgabe den passenden Skill lesen (z. B. `expo-router`, `expo-upgrade`, `eas-workflows`).
+- **46 projektlokale Skills** in `.agents/skills/` (im Repo, `skills-lock.json`): **RevenueCat-Toolkit** (`rc-*`, `revenuecat-*`, `integrate-revenuecat` — für Phase 10.5), **Firebase** (`firebase-environments`, `firebase-mcp-ops`, `firebase-rules-workflow`, `expo-firebase-init`), **Moinsen-Stacks** (`eas-autonomy`, `expo-app-init`, `gcp-oauth-setup`, `expo-mcp-setup`, `expo-migrate-module`). `.claude/` (Symlink-Cache) ist gitignored und wird pro Maschine aus `skills-lock.json` neu gebaut.
 - **MCPs:** `chrome-devtools` ✅ (Web-Verifikation), `patrol` ✅ (Flutter — hier nicht primär), `expo` ✅ **aktiv & authentifiziert** (via `mcp-remote`-Bridge; nativer HTTP-Eintrag hängt in 0.27.0 — Details `docs/AGENT-TOOLING.md` §4).
 - **CLIs:** `eas` (eingeloggt als `moinsen_uli`, Paid Plan), `maestro`, `gh`, Xcode 26.6 + iPhone-Sims, Android SDK + AVD `Pixel_9a`, Java 17, CocoaPods, node 22.
 

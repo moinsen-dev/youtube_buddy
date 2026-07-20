@@ -45,3 +45,7 @@ example
 # Verification artifacts (Phase screenshots, not committed)
 .verification/
 secrets/
+.env
+
+# Skills-CLI symlink cache (rebuilt from skills-lock.json on each machine)
+.claude/
