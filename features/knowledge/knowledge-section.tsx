@@ -7,14 +7,16 @@ import { getDb } from '@/core/db';
 import {
   getAnalysis,
   getNoteForVideo,
-  insertNote,
+  listAllNotes,
+  listConcepts,
   listFlashcardsForVideo,
   listGuides,
-  updateNoteBody,
 } from '@/core/db/repositories';
+import { saveNoteWithLinks, updateNoteBodyWithLinks } from '@/core/markdown/note-store';
 import { useTheme } from '@/core/theme';
 
 import { generateKnowledge } from './generate';
+import { MarkdownEditor } from './markdown-editor';
 
 /**
  * Knowledge section for the video detail (M6): "Karten & Guide erstellen"
@@ -32,6 +34,7 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
   const [error, setError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState('');
   const [noteId, setNoteId] = useState<number | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
 
   const reload = useCallback(async () => {
@@ -44,6 +47,11 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
     const note = await getNoteForVideo(db, videoId, 'free');
     setNoteId(note?.id ?? null);
     setNoteText(note?.bodyMd ?? '');
+    const [concepts, allNotes] = await Promise.all([listConcepts(db), listAllNotes(db, 100)]);
+    setSuggestions([
+      ...concepts.map((concept) => concept.displayName),
+      ...allNotes.map((item) => item.title),
+    ]);
   }, [videoId]);
 
   useFocusEffect(
@@ -94,9 +102,9 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
       const db = await getDb();
       if (!db) return;
       if (noteId) {
-        await updateNoteBody(db, noteId, text, Date.now());
+        await updateNoteBodyWithLinks(db, noteId, text);
       } else if (text.trim().length > 0) {
-        const id = await insertNote(db, {
+        const id = await saveNoteWithLinks(db, {
           videoId,
           conceptId: null,
           type: 'free',
@@ -200,24 +208,13 @@ export function KnowledgeSection({ videoId, videoTitle }: { videoId: string; vid
         <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
           FREIE NOTIZ (Markdown)
         </Text>
-        <TextInput
+        <MarkdownEditor
           value={noteText}
           onChangeText={setNoteText}
           onBlur={() => void saveNote(noteText)}
-          placeholder="Eigene Gedanken zum Video…"
-          placeholderTextColor={theme.colors.textTertiary}
-          multiline
+          placeholder="Eigene Gedanken zum Video… ([[ verlinkt Konzepte/Notizen])"
           accessibilityLabel="Freie Notiz bearbeiten"
-          style={[
-            styles.noteInput,
-            theme.typography.body,
-            {
-              color: theme.colors.textPrimary,
-              borderColor: theme.colors.lineSubtle,
-              borderRadius: theme.radius.md,
-              backgroundColor: theme.colors.bgBase,
-            },
-          ]}
+          suggestions={{ titles: suggestions }}
         />
       </View>
     </View>

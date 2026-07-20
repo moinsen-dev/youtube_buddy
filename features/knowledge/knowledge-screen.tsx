@@ -4,14 +4,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDb } from '@/core/db';
+import { shareVaultZip } from '@/core/export/vault-share';
 import {
   countDueFlashcards,
   listActiveHabits,
+  listConceptsWithSourceCount,
   listGuides,
   listHabitChecksForDay,
   listRecentNotes,
   listReviewDays,
   setHabitCheck,
+  type ConceptRow,
   type GuideRow,
   type HabitRow,
   type NoteRow,
@@ -21,9 +24,9 @@ import { useTheme } from '@/core/theme';
 import { computeStreak, localDayKey } from '@/features/flashcards/srs';
 
 /**
- * Wissen tab (M6, DESIGN 5.13 — Grundgerüst): review tile with due count +
- * streak, guides with progress, habits with today's checkboxes, recent
- * notes. Concepts + graph land in phase 7 (M11).
+ * Wissen tab (M6 + M11, DESIGN 5.13): review tile with due count + streak,
+ * concept chips with source counts, guides with progress, habits with
+ * today's checkboxes, recent notes, graph entry.
  */
 export function KnowledgeScreen() {
   const theme = useTheme();
@@ -36,7 +39,21 @@ export function KnowledgeScreen() {
   const [habitRows, setHabitRows] = useState<HabitRow[]>([]);
   const [checkedToday, setCheckedToday] = useState<Set<number>>(new Set());
   const [recentNotes, setRecentNotes] = useState<NoteRow[]>([]);
+  const [conceptRows, setConceptRows] = useState<(ConceptRow & { sources: number })[]>([]);
   const [today, setToday] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const exportVault = useCallback(async () => {
+    setExporting(true);
+    try {
+      const db = await getDb();
+      if (db) await shareVaultZip(db);
+    } catch (cause) {
+      console.error('[export] vault failed', cause);
+    } finally {
+      setExporting(false);
+    }
+  }, []);
 
   const reload = useCallback(async () => {
     const day = localDayKey(Date.now());
@@ -47,6 +64,7 @@ export function KnowledgeScreen() {
     setDueCount(await countDueFlashcards(db, now));
     setStreak(computeStreak(await listReviewDays(db), now));
     setGuideRows(await listGuides(db));
+    setConceptRows(await listConceptsWithSourceCount(db));
     const habits = await listActiveHabits(db);
     setHabitRows(habits);
     const checks = await listHabitChecksForDay(db, day);
@@ -112,6 +130,38 @@ export function KnowledgeScreen() {
           </Text>
         )}
       </Pressable>
+
+      {conceptRows.length > 0 && (
+        <View style={styles.section}>
+          <Text
+            style={[theme.typography.caption, styles.label, { color: theme.colors.textSecondary }]}
+          >
+            KONZEPTE
+          </Text>
+          <View style={styles.chipRow}>
+            {conceptRows.map((concept) => (
+              <Pressable
+                key={concept.id}
+                onPress={() => concept.noteId != null && router.push(`/notes/${concept.noteId}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`Konzept ${concept.displayName}, ${concept.sources} Quellen`}
+                style={({ pressed }) => [
+                  styles.chip,
+                  {
+                    borderColor: theme.colors.lineSubtle,
+                    borderRadius: theme.radius.md,
+                    backgroundColor: pressed ? theme.colors.bgOverlay : theme.colors.bgElevated,
+                  },
+                ]}
+              >
+                <Text style={[theme.typography.caption, { color: theme.colors.textPrimary }]}>
+                  {concept.displayName} · {concept.sources}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
 
       {guideRows.length > 0 && (
         <View style={styles.section}>
@@ -228,15 +278,72 @@ export function KnowledgeScreen() {
             NOTIZEN (zuletzt)
           </Text>
           {recentNotes.map((note) => (
-            <View key={note.id} style={styles.noteRow}>
+            <Pressable
+              key={note.id}
+              onPress={() => router.push(`/notes/${note.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={`Notiz ${note.title} öffnen`}
+              style={({ pressed }) => [
+                styles.noteRow,
+                {
+                  minHeight: theme.touchTarget.default,
+                  justifyContent: 'center',
+                  borderRadius: theme.radius.md,
+                  backgroundColor: pressed ? theme.colors.bgOverlay : 'transparent',
+                },
+              ]}
+            >
               <Text
                 style={[theme.typography.body, { color: theme.colors.textPrimary }]}
                 numberOfLines={1}
               >
                 • {note.type === 'free' ? 'Freie Notiz' : note.type}: {note.title}
               </Text>
-            </View>
+            </Pressable>
           ))}
+        </View>
+      )}
+
+      {(conceptRows.length > 0 || recentNotes.length > 0) && (
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={() => router.push('/graph')}
+            accessibilityRole="button"
+            accessibilityLabel="Wissensgraph ansehen"
+            style={({ pressed }) => [
+              styles.graphButton,
+              {
+                minHeight: theme.touchTarget.default,
+                borderRadius: theme.radius.lg,
+                borderColor: theme.colors.lineSubtle,
+                backgroundColor: pressed ? theme.colors.bgOverlay : theme.colors.bgElevated,
+              },
+            ]}
+          >
+            <Text style={[theme.typography.bodyStrong, { color: theme.colors.textPrimary }]}>
+              ◉ Wissensgraph ansehen
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void exportVault()}
+            disabled={exporting}
+            accessibilityRole="button"
+            accessibilityLabel="Obsidian Vault exportieren"
+            style={({ pressed }) => [
+              styles.graphButton,
+              {
+                minHeight: theme.touchTarget.default,
+                borderRadius: theme.radius.lg,
+                borderColor: theme.colors.lineSubtle,
+                backgroundColor: pressed ? theme.colors.bgOverlay : theme.colors.bgElevated,
+                opacity: exporting ? 0.5 : 1,
+              },
+            ]}
+          >
+            <Text style={[theme.typography.bodyStrong, { color: theme.colors.textPrimary }]}>
+              {exporting ? 'Exportiere…' : '⇩ Vault exportieren'}
+            </Text>
+          </Pressable>
         </View>
       )}
 
@@ -288,5 +395,26 @@ const styles = StyleSheet.create({
   },
   noteRow: {
     paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  graphButton: {
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });

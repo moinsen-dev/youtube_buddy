@@ -4,11 +4,13 @@ import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 import {
   analyses,
   channels,
+  concepts,
   flashcardReviews,
   flashcards,
   guides,
   habitChecks,
   habits,
+  noteLinks,
   notes,
   playlists,
   playlistItems,
@@ -603,4 +605,120 @@ export async function updateGuideProgress(
   updatedAt: number,
 ): Promise<void> {
   await db.update(guides).set({ progressStep, updatedAt }).where(eq(guides.id, id));
+}
+
+// --- concepts & note_links (M11) ---
+
+export interface ConceptRow {
+  id: number;
+  name: string;
+  displayName: string;
+  noteId: number | null;
+  createdAt: number;
+}
+
+export async function insertConcept(
+  db: Db,
+  row: { name: string; displayName: string; noteId: number | null; createdAt: number },
+): Promise<number> {
+  const result = await db
+    .insert(concepts)
+    .values(row)
+    .onConflictDoUpdate({ target: concepts.name, set: { displayName: row.displayName } });
+  const existing = await getConceptByName(db, row.name);
+  return existing?.id ?? Number(result.lastInsertRowId);
+}
+
+export async function getConceptByName(db: Db, name: string): Promise<ConceptRow | null> {
+  const rows = await db.select().from(concepts).where(eq(concepts.name, name)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getConcept(db: Db, id: number): Promise<ConceptRow | null> {
+  const rows = await db.select().from(concepts).where(eq(concepts.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listConcepts(db: Db): Promise<ConceptRow[]> {
+  return db.select().from(concepts).orderBy(concepts.displayName);
+}
+
+/** Concepts with their backlink count (notes linking to the concept note). */
+export async function listConceptsWithSourceCount(
+  db: Db,
+): Promise<(ConceptRow & { sources: number })[]> {
+  const all = await listConcepts(db);
+  const out: (ConceptRow & { sources: number })[] = [];
+  for (const concept of all) {
+    let sources = 0;
+    if (concept.noteId != null) {
+      const links = await db
+        .select({ id: noteLinks.id })
+        .from(noteLinks)
+        .where(and(eq(noteLinks.dstNoteId, concept.noteId), eq(noteLinks.resolved, 1)));
+      sources = links.length;
+    }
+    out.push({ ...concept, sources });
+  }
+  return out;
+}
+
+export async function updateConceptNoteId(db: Db, id: number, noteId: number): Promise<void> {
+  await db.update(concepts).set({ noteId }).where(eq(concepts.id, id));
+}
+
+export interface NoteLinkRow {
+  id: number;
+  srcNoteId: number;
+  dstNoteId: number | null;
+  dstConceptName: string;
+  resolved: number;
+}
+
+/** Replaces all outgoing links of a note (called on insert/update of the note). */
+export async function replaceNoteLinks(
+  db: Db,
+  srcNoteId: number,
+  links: { dstNoteId: number | null; dstConceptName: string; resolved: number }[],
+): Promise<void> {
+  await db.delete(noteLinks).where(eq(noteLinks.srcNoteId, srcNoteId));
+  for (const link of links) {
+    await db.insert(noteLinks).values({ srcNoteId, ...link });
+  }
+}
+
+/** Backlinks = reverse lookup: notes that link TO this note (DESIGN 5.14). */
+export async function listBacklinks(db: Db, dstNoteId: number): Promise<NoteRow[]> {
+  const links = await db
+    .select({ srcNoteId: noteLinks.srcNoteId })
+    .from(noteLinks)
+    .where(and(eq(noteLinks.dstNoteId, dstNoteId), eq(noteLinks.resolved, 1)));
+  const out: NoteRow[] = [];
+  for (const link of links) {
+    const note = await getNote(db, link.srcNoteId);
+    if (note) out.push(note);
+  }
+  return out;
+}
+
+export async function getNote(db: Db, id: number): Promise<NoteRow | null> {
+  const rows = await db.select().from(notes).where(eq(notes.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listNotesByType(db: Db, type: NoteType, limit = 50): Promise<NoteRow[]> {
+  return db
+    .select()
+    .from(notes)
+    .where(eq(notes.type, type))
+    .orderBy(desc(notes.updatedAt))
+    .limit(limit);
+}
+
+export async function listAllNotes(db: Db, limit = 500): Promise<NoteRow[]> {
+  return db.select().from(notes).orderBy(desc(notes.updatedAt)).limit(limit);
+}
+
+export async function listAllNoteLinks(db: Db): Promise<NoteLinkRow[]> {
+  return db.select().from(noteLinks);
 }

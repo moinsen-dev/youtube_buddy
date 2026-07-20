@@ -71,6 +71,16 @@ export const migrations: Migration[] = [
       'CREATE TABLE IF NOT EXISTS guides (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), note_id INTEGER REFERENCES notes(id), title TEXT NOT NULL, payload TEXT NOT NULL, progress_step INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)',
     ],
   },
+  {
+    id: '0007_m11_knowledge_base',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS concepts (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL, note_id INTEGER REFERENCES notes(id), created_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS note_links (id INTEGER PRIMARY KEY AUTOINCREMENT, src_note_id INTEGER NOT NULL REFERENCES notes(id), dst_note_id INTEGER REFERENCES notes(id), dst_concept_name TEXT NOT NULL, resolved INTEGER NOT NULL DEFAULT 0)',
+      'CREATE INDEX IF NOT EXISTS idx_note_links_src ON note_links (src_note_id)',
+      'CREATE INDEX IF NOT EXISTS idx_note_links_dst ON note_links (dst_note_id)',
+      'CREATE INDEX IF NOT EXISTS idx_notes_type_updated ON notes (type, updated_at)',
+    ],
+  },
 ];
 
 /**

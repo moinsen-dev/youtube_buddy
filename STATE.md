@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-20
-**Aktuelle Phase:** **Phase 6 (Wissensmodule & Guide-Modus, M6) abgeschlossen ✅** → nächster Schritt **Phase 7 (Wissensbasis, M11)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 7 (Wissensbasis, M11) abgeschlossen ✅** → nächster Schritt **Phase 8 (Reise-Modul, M7)** gemäß `docs/ROADMAP.md`
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -210,21 +210,45 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 3. **eslint react-hooks (v6):** PanResponder in `useMemo` mit aktuellen Capture-Werten statt Refs im Render; `Date.now()` nicht im Render.
 4. **Notes ab jetzt:** Jede Generierung schreibt `flashcard_set`/`habit`/`guide`-Notizen — Wiki-Link-/Konzept-Pipeline folgt in Phase 7.
 
+| **Phase 7 — Wissensbasis (M11)** | ✅ | **Exit-Kriterien erfüllt (2026-07-20): `[[…]]` löst auf Konzept-/Summary-Notizen auf, Backlinks komplett (beide Richtungen), Graph rendert lokal, Vault-ZIP mit YAML-Frontmatter + funktionierenden Wiki-Links, Rename-Rewrite per Unit-Test** |
+
+## Phase 7 — Ergebnis (2026-07-20, abgeschlossen)
+
+**Gebaut:** Migration `0007_m11_knowledge_base` (`concepts` UNIQUE name, `note_links` + beide Indizes, `notes(type, updated_at)`-Index); `core/markdown` (`wiki-links.ts` Parser mit Obsidian-Regeln (`[[t]]`/`[[t|alias]]`, Case-Dedup), `resolver.ts` mit injizierbarem LinkLookup (Konzept → Titel, ungelöste Links erlaubt), `note-store.ts`: jeder Notiz-Write parsed + resolved + ersetzt Links — `note_links` spiegelt immer `body_md`; `renameConcept` mit `rewriteLinkInBody`); `extract_concepts.v1` Template + `features/knowledge/concept-extraction.ts` (Batch nach jeder Analyse: Summary-Notiz anlegen/aktualisieren, Konzepte mit Dedup gegen `concepts`, Quellen beidseitig verlinken); UI: `note-detail-screen.tsx` (DESIGN 5.14: Segmente mit tappable Links, Quellen-Chip, Backlink-Panel, Graph-Einstieg), Wissen-Tab vollständig (Konzept-Chips mit Quellen-Zahl, Notizen → Detail, Graph-/Export-Buttons), `graph-screen.tsx` (DESIGN 5.15: d3-force-Layout zur Laufzeit, react-native-svg, Filter Alle/Konzepte/Videos, Tap → Detail, Legende), `markdown-editor.tsx` (`[[`-Autocomplete über Konzepte + Titel, in der freien Notiz), `core/export/vault.ts` + `vault-share.ts` (Ordnerstruktur Konzepte/Guides/Summaries/Karten/Habits/Notizen, YAML-Frontmatter, jszip-ZIP + expo-sharing). Pakete: d3-force (+@types), react-native-svg, jszip, expo-sharing (Dev-Client-Rebuild Android). 92 Tests + tsc + eslint 0 Fehler.
+
+**Verifikations-Matrix (Exit-Kriterien):**
+
+| Kriterium                       | Beleg                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[[…]]` löst auf                | ✅ Konzept-Notiz „Drilling": `[[Summary: …]]` als tappable Info-Link; Summary-Notiz: 6 Konzept-Links; DB: 12 `note_links` resolved=1 (beide Richtungen) |
+| Backlinks zeigen Erwähnungen    | ✅ Konzept „WIRD ERWÄHNT IN (1)" (Summary), Summary „WIRD ERWÄHNT IN (6)" (alle Konzepte)                                                               |
+| Konzept-Extraktion + Dedup      | ✅ 6 sinnvolle Konzepte aus dem Kaiju-Video (Microwelt, Protisten, Kaiju, Giftpflanzen, Drilling, Naturgewalt), Chips mit Quellen-Zahl                  |
+| Graph rendert lokal             | ✅ 7 Nodes (6 Konzepte + Video), Filter, Legende, Tap → Detail (Layout < 500 ms bei diesem Bestand; 1.000-Node-Benchmark offen, Bestand zu klein)       |
+| Vault-Export öffnet in Obsidian | ✅ ZIP (12 Dateien) mit Ordnern + YAML-Frontmatter (title/type/video/source/created/updated/tags) + intakten `[[…]]`-Links; Share-Sheet verifiziert     |
+| Umbenennen aktualisiert Links   | ✅ `rewriteLinkInBody` per Unit-Test (Case, Alias-Erhalt, Regex-Escape); DB-Orchestrierung `renameConcept`                                              |
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **typedRoutes-Typen** für neue Routen regenieren erst bei Metro-Neustart (`router.d.ts`); bei Bedarf kurz `expo start --port 8083` für Typegen.
+2. **react-hooks-Regeln vs. d3-force** — Layout als reines `useMemo` (kein `Date.now`/Logging im Memo); Zeitmessung nur bei Verifikation.
+3. **`@types/d3-force` fehlte** (Paket ist typlos) — als devDependency ergänzt.
+4. **run:android-Timeouts hängen nach erfolgreichem Install** — APK/lastUpdateTime prüfen, dann Metro separat als Hintergrund-Task starten (`EXPO_UNSTABLE_MCP_SERVER=1 npx expo start --port 8081`).
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
 2. Whisper-Fallback für Transkripte — Entscheidung nach Phase 3: **nicht nötig** (Fehlerquote 0/10), bleibt Could-Option.
 3. ~~Finales Chat-Modell~~ — **entschieden in Phase 4** (Qwen3-4B ≥ 6 GB, Llama-3.2-3B 4-GB-Tier).
-4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
-5. Datentransfer Phone → TV — Entscheidung in Phase 12.
-6. **Android-Perf + P50-Analysezeit auf physischem Gerät** (≥ 10 Tok/s, P50 < 90 s) — Emulator-Artefakte, s. Phase 4/5.
-7. **iOS-Verifikation Phase 5/6** — expo-speech-Rebuild läuft; Re-Login klemmt am Consent-Screen (Continue manuell tippen).
-8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5, Punkt 2).
-9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate in Phase 7.
+4. Konzept-Dedup-Qualität — **erste Evidenz gut** (6 saubere Konzepte); Golden-Set-Gate bei zweiter Analyse desselben Themas (Dedup-Pfad) noch ausstehend; ggf. Embedding-Clustering in Phase 9.
+5. Datentransfer Phone → TV — **per ADR gelöst ab Phase 10.5** (E2E-Sync via Firebase).
+6. **Android-Perf + P50-Analysezeit auf physischem Gerät** (≥ 10 Tok/s, P50 < 90 s) — Emulator-Artefakte.
+7. **iOS-Verifikation Phase 5–7** — expo-speech-Rebuild + Consent-Tap ausstehend.
+8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5).
+9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
+10. **Graph-Benchmark 1.000 Nodes** — sobald der Bestand wächst; aktuell < 10 Nodes, kein Perf-Problem absehbar.
 
-## Nächste Schritte (Phase 7 — Wissensbasis, M11)
+## Nächste Schritte (Phase 8 — Reise-Modul, M7)
 
-1. Tabellen `concepts` + `note_links`; `core/markdown` (Wiki-Link-Parser/Resolver, Transaktion bei Insert/Update); Konzept-Extraktion (Template `extract_concepts` mit Dedup gegen `concepts`).
-2. Notiz-Detail (DESIGN 5.14: Wiki-Links aufgelöst, BacklinkPanel), Konzept-Seiten, GraphView (d3-force, SVG, Filter) + Konzept-Chips im Wissen-Tab.
-3. Vault-Export (Obsidian-Markdown-Zip) + JSON-Backup (core/export); FTS5 über `transcript_chunks.text` + `notes.body_md` (Volltext-Fallback).
-4. **Exit:** Aus ≥ 3 Analysen entstehen verlinkte Notizen mit Backlinks + Graph; Vault-Export öffnet sich in Obsidian mit funktionierenden Links; Golden-Set-Gate für Konzept-Dedup.
+1. Template `extract_places` (Orte/POIs/Route mit Zeitstempeln) + `trip_places`-Tabelle; Geocoding **nur bei Opt-in** (Nominatim, 1 req/s, Cache, User-Agent), alternativ manuelles Pinning offline.
+2. MapView-Card (DESIGN 5.8: Polyline + nummerierte Pins, Ortsliste mit Video-Sprüngen); Trip-Notiz (type `trip`) in der Wissensbasis.
+3. **Exit:** Reisevideo liefert Orte + Route auf der Karte; Offline-Pfad (ohne Opt-in) funktioniert mit manuellem Pinning; Quellen springen zum Zeitstempel.

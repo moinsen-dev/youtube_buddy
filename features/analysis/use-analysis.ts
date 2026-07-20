@@ -9,6 +9,7 @@ import { getDb } from '@/core/db';
 import { listAnalyses, upsertAnalysis } from '@/core/db/repositories';
 import { defaultLocale } from '@/core/i18n/strings';
 import { ensureTranscript } from '@/features/transcripts/ensure-transcript';
+import { extractConceptsForVideo } from '@/features/knowledge/concept-extraction';
 
 import { analyzeTranscript, type AnalysisProgress } from './analyze';
 
@@ -125,6 +126,13 @@ export function useAnalysis(videoId: string) {
           payload: JSON.stringify(result.triage),
           createdAt: now,
         });
+        // Concept extraction follows the analysis (ARCHITECTURE §5.4) —
+        // failures must not break the analysis flow.
+        try {
+          await extractConceptsForVideo(engine, db, videoId);
+        } catch (cause) {
+          console.warn('[knowledge] concept extraction failed', cause);
+        }
         setState((current) => ({
           ...current,
           status: 'ready',

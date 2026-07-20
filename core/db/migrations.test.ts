@@ -61,6 +61,7 @@ const MIGRATION_IDS = [
   '0004_m3_transcripts',
   '0005_m5_analyses',
   '0006_m6_knowledge',
+  '0007_m11_knowledge_base',
 ];
 
 describe('core/db migration runner', () => {
@@ -95,6 +96,15 @@ describe('core/db migration runner', () => {
     );
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS habit_checks')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS concepts')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS note_links')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE INDEX IF NOT EXISTS idx_note_links_dst')),
     ).toBe(true);
     expect(
       db.executedSql.some((sql) =>

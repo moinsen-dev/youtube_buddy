@@ -231,3 +231,33 @@ export const guides = sqliteTable('guides', {
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
+
+// --- M11: Wissensbasis (ARCHITECTURE.md §4) ---
+
+export const concepts = sqliteTable('concepts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  /** Normalized lookup key (lowercase, singular). */
+  name: text('name').unique().notNull(),
+  displayName: text('display_name').notNull(),
+  noteId: integer('note_id').references(() => notes.id),
+  createdAt: integer('created_at').notNull(),
+});
+
+export const noteLinks = sqliteTable(
+  'note_links',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    srcNoteId: integer('src_note_id')
+      .notNull()
+      .references(() => notes.id),
+    dstNoteId: integer('dst_note_id').references(() => notes.id),
+    /** Link target as written in the body (kept for unresolved links). */
+    dstConceptName: text('dst_concept_name').notNull(),
+    /** 1 = resolved to dst_note_id, 0 = unresolved (Obsidian-style). */
+    resolved: integer('resolved').notNull().default(0),
+  },
+  (table) => [
+    index('idx_note_links_src').on(table.srcNoteId),
+    index('idx_note_links_dst').on(table.dstNoteId),
+  ],
+);
