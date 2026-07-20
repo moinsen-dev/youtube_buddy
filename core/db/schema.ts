@@ -145,3 +145,89 @@ export const analyses = sqliteTable(
     unique('uq_analyses_video_kind').on(table.videoId, table.kind),
   ],
 );
+
+// --- M6: Wissensmodule (ARCHITECTURE.md §4) ---
+
+export type NoteType =
+  'summary' | 'guide' | 'flashcard_set' | 'habit' | 'trip' | 'concept' | 'free';
+
+export const notes = sqliteTable('notes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  videoId: text('video_id').references(() => videos.id),
+  /** references concepts(id) — table lands with M11 in phase 7. */
+  conceptId: integer('concept_id'),
+  type: text('type').$type<NoteType>().notNull(),
+  title: text('title').notNull(),
+  bodyMd: text('body_md').notNull(),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});
+
+export const flashcards = sqliteTable(
+  'flashcards',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => videos.id),
+    noteId: integer('note_id').references(() => notes.id),
+    front: text('front').notNull(),
+    back: text('back').notNull(),
+    sourceSec: integer('source_sec'),
+    ease: real('ease').notNull().default(2.5),
+    intervalDays: integer('interval_days').notNull().default(0),
+    dueAt: integer('due_at').notNull(),
+    reps: integer('reps').notNull().default(0),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [index('idx_flashcards_due').on(table.dueAt)],
+);
+
+export const flashcardReviews = sqliteTable('flashcard_reviews', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  cardId: integer('card_id')
+    .notNull()
+    .references(() => flashcards.id),
+  reviewedAt: integer('reviewed_at').notNull(),
+  /** SM-2 grade 0–5. */
+  grade: integer('grade').notNull(),
+});
+
+export const habits = sqliteTable('habits', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  videoId: text('video_id')
+    .notNull()
+    .references(() => videos.id),
+  noteId: integer('note_id').references(() => notes.id),
+  title: text('title').notNull(),
+  cue: text('cue'),
+  active: integer('active').notNull().default(1),
+  createdAt: integer('created_at').notNull(),
+});
+
+export const habitChecks = sqliteTable(
+  'habit_checks',
+  {
+    habitId: integer('habit_id')
+      .notNull()
+      .references(() => habits.id),
+    /** ISO day 'YYYY-MM-DD' (local). */
+    day: text('day').notNull(),
+    done: integer('done').notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.habitId, table.day] })],
+);
+
+export const guides = sqliteTable('guides', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  videoId: text('video_id')
+    .notNull()
+    .references(() => videos.id),
+  noteId: integer('note_id').references(() => notes.id),
+  title: text('title').notNull(),
+  /** JSON payload: steps + materials (zod-validated before write). */
+  payload: text('payload').notNull(),
+  progressStep: integer('progress_step').notNull().default(0),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+});

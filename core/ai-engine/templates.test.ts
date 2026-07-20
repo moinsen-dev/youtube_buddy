@@ -3,6 +3,9 @@ import { summarizeV1, summarizeV1Schema } from './prompts/summarize.v1';
 import { summarizeReduceV1, summarizeReduceV1Schema } from './prompts/summarize-reduce.v1';
 import { chaptersV1, chaptersV1Schema } from './prompts/chapters.v1';
 import { triageV1, triageV1Schema } from './prompts/triage.v1';
+import { flashcardsV1, flashcardsV1Schema } from './prompts/flashcards.v1';
+import { habitsV1, habitsV1Schema } from './prompts/habits.v1';
+import { howtoV1, howtoV1Schema } from './prompts/howto.v1';
 import { parseJsonOutput } from './parse-json';
 
 describe('prompt templates', () => {
@@ -98,5 +101,54 @@ describe('prompt templates', () => {
     expect(() => triageV1Schema.parse({ ...good, score: 6 })).toThrow();
     expect(() => triageV1Schema.parse({ ...good, score: 2.5 })).toThrow();
     expect(() => triageV1Schema.parse({ ...good, density: 'viel' })).toThrow();
+  });
+
+  it('flashcards.v1 requires >= 3 cards with source timestamps', () => {
+    const prompt = flashcardsV1.render({
+      title: 'Test',
+      language: 'de',
+      tldr: 'Kurz',
+      keyPoints: [{ text: 'Kernaussage', sourceRefs: [{ startSec: 42 }] }],
+    });
+    expect(prompt).toContain('[42s] Kernaussage');
+
+    const good = {
+      cards: [
+        { front: 'F1', back: 'B1', sourceSec: 42 },
+        { front: 'F2', back: 'B2', sourceSec: 43 },
+        { front: 'F3', back: 'B3', sourceSec: 44 },
+      ],
+    };
+    expect(parseJsonOutput(JSON.stringify(good), flashcardsV1Schema)).toEqual(good);
+    expect(() => flashcardsV1Schema.parse({ cards: good.cards.slice(0, 2) })).toThrow();
+  });
+
+  it('habits.v1 caps at 5 habits with cue', () => {
+    const good = { habits: [{ title: 'Täglich 2 Minuten', cue: 'Wenn ich aufstehe' }] };
+    expect(parseJsonOutput(JSON.stringify(good), habitsV1Schema)).toEqual(good);
+    const tooMany = { habits: Array.from({ length: 6 }, (_, i) => ({ title: `h${i}`, cue: 'c' })) };
+    expect(() => habitsV1Schema.parse(tooMany)).toThrow();
+  });
+
+  it('howto.v1 requires >= 2 steps and allows empty materials', () => {
+    const prompt = howtoV1.render({
+      title: 'Test',
+      language: 'de',
+      tldr: 'Kurz',
+      summary: 'Lang',
+      keyPoints: [{ text: 'Schritt eins', sourceRefs: [{ startSec: 10 }] }],
+    });
+    expect(prompt).toContain('[10s] Schritt eins');
+
+    const good = {
+      title: 'Guide',
+      materials: [],
+      steps: [
+        { nr: 1, text: 'Erst', materialRefs: [], sourceSec: 10 },
+        { nr: 2, text: 'Dann', materialRefs: [], sourceSec: 20 },
+      ],
+    };
+    expect(parseJsonOutput(JSON.stringify(good), howtoV1Schema)).toEqual(good);
+    expect(() => howtoV1Schema.parse({ ...good, steps: good.steps.slice(0, 1) })).toThrow();
   });
 });

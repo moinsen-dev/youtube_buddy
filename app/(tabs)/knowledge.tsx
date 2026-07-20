@@ -1,6 +1,5 @@
-import { t } from '@/core/i18n/strings';
-import { DummyScreen } from '@/features/shell/dummy-screen';
+import { KnowledgeScreen } from '@/features/knowledge/knowledge-screen';
 
-export default function KnowledgeScreen() {
-  return <DummyScreen title={t().tabs.knowledge} />;
+export default function KnowledgeTab() {
+  return <KnowledgeScreen />;
 }

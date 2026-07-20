@@ -59,6 +59,18 @@ export const migrations: Migration[] = [
       'CREATE INDEX IF NOT EXISTS idx_analyses_video_kind ON analyses (video_id, kind)',
     ],
   },
+  {
+    id: '0006_m6_knowledge',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT REFERENCES videos(id), concept_id INTEGER, type TEXT NOT NULL, title TEXT NOT NULL, body_md TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS flashcards (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), note_id INTEGER REFERENCES notes(id), front TEXT NOT NULL, back TEXT NOT NULL, source_sec INTEGER, ease REAL NOT NULL DEFAULT 2.5, interval_days INTEGER NOT NULL DEFAULT 0, due_at INTEGER NOT NULL, reps INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL)',
+      'CREATE INDEX IF NOT EXISTS idx_flashcards_due ON flashcards (due_at)',
+      'CREATE TABLE IF NOT EXISTS flashcard_reviews (id INTEGER PRIMARY KEY AUTOINCREMENT, card_id INTEGER NOT NULL REFERENCES flashcards(id), reviewed_at INTEGER NOT NULL, grade INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS habits (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), note_id INTEGER REFERENCES notes(id), title TEXT NOT NULL, cue TEXT, active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL)',
+      'CREATE TABLE IF NOT EXISTS habit_checks (habit_id INTEGER NOT NULL REFERENCES habits(id), day TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (habit_id, day))',
+      'CREATE TABLE IF NOT EXISTS guides (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), note_id INTEGER REFERENCES notes(id), title TEXT NOT NULL, payload TEXT NOT NULL, progress_step INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)',
+    ],
+  },
 ];
 
 /**

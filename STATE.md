@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-20
-**Aktuelle Phase:** **Phase 5 (Video-Analyse, M5) abgeschlossen ✅** → nächster Schritt **Phase 6 (Wissensmodule & Guide-Modus, M6)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 6 (Wissensmodule & Guide-Modus, M6) abgeschlossen ✅** → nächster Schritt **Phase 7 (Wissensbasis, M11)** gemäß `docs/ROADMAP.md`
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
 
 ---
@@ -181,6 +181,29 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Qualitäts-Notizen (für Phase 6/7 relevant):** Triage-Kalibrierung des 3B-Modells ist zu streng (alle Scores 1–2, auch bei Kurzgesagt) — Golden-Set-Gate für Triage-Prompt nötig. Kapitel sparsam bei kurzen Videos (2 Gruppen → 2 Kapitel, je ~6 min) — ggf. kleinere Map-Gruppen oder Kapitel-Minimum im Template.
 
+| **Phase 6 — Wissensmodule & Guide-Modus (M6)** | ✅ | **Exit-Kriterien erfüllt (2026-07-20): Kochvideo → 8 Karten + Guide mit Quellen-Zeitstempeln, Guide-Modus 1→3 durchklickt (Fortschritt persistiert), TTS liest vor, „Im Video ansehen" + Rücksprung verifiziert, SM-2 per Tests + Live-Scheduling in DB** |
+
+## Phase 6 — Ergebnis (2026-07-20, abgeschlossen)
+
+**Gebaut:** Migration `0006_m6_knowledge` (notes, flashcards + due-Index, flashcard_reviews, habits, habit_checks, guides); `features/flashcards/srs.ts` (SM-2 pure + Streak, 8 Tests mit simulierten Tagen); Templates `flashcards.v1`, `habits.v1`, `howto.v1`; `features/knowledge` (`generate.ts`: analyses.summary → 3 Engine-Calls → Karten/Habits/Guide **plus Notes-Einträge** (M11-Grundlage, ARCHITECTURE §5.3); `knowledge-screen.tsx` (DESIGN 5.13: Review-Kachel mit Fälligkeit + Streak, Guides mit Fortschritt, Habits mit Tages-Checkboxen, Notizen-Liste); `knowledge-section.tsx` im Video-Detail (CTA „Karten & Guide erstellen" mit Fortschritt/Abbrechen + freie Markdown-Notiz type `free`)); `features/flashcards/review-screen.tsx` (DESIGN 5.6: Queue, Tap-to-Flip, Quellen-Link, 4 Grade-Buttons, Streak); `features/guides` (`guide-screen.tsx` DESIGN 5.7: Material-Checkliste, Schritte mit Zeitstempel-Sprüngen, Resume-Label; `guide-mode-screen.tsx` DESIGN 5.12: Vollbild-StepCards, Fortschrittsbalken, Buttons ≥ 64 pt, Swipe via PanResponder, `progress_step`-Persistierung, **TTS via expo-speech** mit Stopp-State); Routes `/review`, `/guide/[id]`, `/guide-mode/[id]`; `?t=<sec>` im Video-Deep-Link (Startposition). 73 Tests + tsc + eslint 0 Fehler. expo-speech als natives Modul → Dev-Client-Rebuilds (Android ✅, iOS läuft).
+
+**Verifikations-Matrix (Exit-Kriterien, Kochvideo „Sourdough Bread | Basics with Babish", 25:45, 37 Chunks):**
+
+| Kriterium                                                 | Beleg                                                                                                                                                                             |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ≥ 8 Karten + 1 Anleitung mit korrekten Quellen            | ✅ **8 Karten** (z. B. „Was ist Sourdough-Bread?") + **Guide** (5 Schritte, 5 Materialien, Zeitstempel 0:00/5:44/16:27/22:16) — DB-verifiziert, Triage dazu 4/5 „Tutorial · hoch" |
+| Guide-Modus komplett durchklickbar, speichert Fortschritt | ✅ Schritt 1→3 geklickt (Swipe vorhanden), `progress_step=2` in DB, Übersicht „SCHRITTE 2/5 ✓", Resume „(ab Schritt 3)"                                                           |
+| TTS liest einen Schritt vor                               | ✅ Button wechselt zu „⏸ Stopp" (expo-speech, Android)                                                                                                                            |
+| „Im Video ansehen" springt zum Zeitstempel und zurück     | ✅ 16:27 → Video-Detail mit 64 % Resume-Position; Zurück → Schritt 3/5 erhalten                                                                                                   |
+| SM-2 plant Reviews korrekt (Unit-Tests + simulierte Tage) | ✅ 8 Tests (1→6→e·n-Leiter, Relearn-Reset, Ease-Floor 1.3, Streak-Logik); **live in DB:** 3 Reviews (grade 4) → `reps=1, interval_days=1`                                         |
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **Generation hängt bei App im Hintergrund** — die JS-Seite pausiert, die llama.rn-Completion kommt nie zurück (Befund: App-CPU 3,8 % während „Erstelle…"). Abbrechen + Retry funktioniert; für lange Läufe muss die App im Vordergrund bleiben (Back-Off/Resume später).
+2. **Stale Section-States** — `KnowledgeSection` prüfte Analyse/Engine nur beim Mount; auf `useFocusEffect` umgestellt (gleiches Muster wie Home).
+3. **eslint react-hooks (v6):** PanResponder in `useMemo` mit aktuellen Capture-Werten statt Refs im Render; `Date.now()` nicht im Render.
+4. **Notes ab jetzt:** Jede Generierung schreibt `flashcard_set`/`habit`/`guide`-Notizen — Wiki-Link-/Konzept-Pipeline folgt in Phase 7.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -189,13 +212,13 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
 5. Datentransfer Phone → TV — Entscheidung in Phase 12.
 6. **Android-Perf + P50-Analysezeit auf physischem Gerät** (≥ 10 Tok/s, P50 < 90 s) — Emulator-Artefakte, s. Phase 4/5.
-7. **iOS-Verifikation Phase 5** (Analyse-Flow + Batch) — App läuft, aber Re-Login klemmt am Consent-Screen (Continue manuell tippen); danach nachholen.
+7. **iOS-Verifikation Phase 5/6** — expo-speech-Rebuild läuft; Re-Login klemmt am Consent-Screen (Continue manuell tippen).
 8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5, Punkt 2).
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate in Phase 7.
 
-## Nächste Schritte (Phase 6 — Wissensmodule & Guide-Modus, M6)
+## Nächste Schritte (Phase 7 — Wissensbasis, M11)
 
-1. Templates `flashcards`, `habits`, `howto` (Quellen-Zeitstempel, geordnete Schritte + Material); Tabellen + Repositories; Wissen-Tab Grundgerüst (DESIGN 5.13).
-2. Review-Queue (SM-2 pure + Tests), Flashcard-Flip-UI (DESIGN 5.6), Stats; Guide-Übersicht (5.7) + Guide-Modus (5.12: Vollbild-Karten, Swipe/Buttons ≥ 64 pt, `progress_step`-Persistierung, „Im Video ansehen"-Sprung).
-3. TTS via expo-speech (Should); Habit-Checkliste; freie Notizen (Markdown im Video-Detail).
-4. **Exit:** Kochvideo → ≥ 8 Karten + 1 Anleitung mit korrekten Quellen; Guide-Modus komplett durchklickbar mit Fortschritt; TTS liest einen Schritt; SM-2-Planung per Unit-Test.
+1. Tabellen `concepts` + `note_links`; `core/markdown` (Wiki-Link-Parser/Resolver, Transaktion bei Insert/Update); Konzept-Extraktion (Template `extract_concepts` mit Dedup gegen `concepts`).
+2. Notiz-Detail (DESIGN 5.14: Wiki-Links aufgelöst, BacklinkPanel), Konzept-Seiten, GraphView (d3-force, SVG, Filter) + Konzept-Chips im Wissen-Tab.
+3. Vault-Export (Obsidian-Markdown-Zip) + JSON-Backup (core/export); FTS5 über `transcript_chunks.text` + `notes.body_md` (Volltext-Fallback).
+4. **Exit:** Aus ≥ 3 Analysen entstehen verlinkte Notizen mit Backlinks + Graph; Vault-Export öffnet sich in Obsidian mit funktionierenden Links; Golden-Set-Gate für Konzept-Dedup.

@@ -1,9 +1,15 @@
-import { eq, isNull, notInArray, desc, and, inArray } from 'drizzle-orm';
+import { eq, isNull, notInArray, desc, and, inArray, lte } from 'drizzle-orm';
 import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 
 import {
   analyses,
   channels,
+  flashcardReviews,
+  flashcards,
+  guides,
+  habitChecks,
+  habits,
+  notes,
   playlists,
   playlistItems,
   settings,
@@ -13,6 +19,7 @@ import {
   transcriptChunks,
   transcripts,
   type AnalysisKind,
+  type NoteType,
 } from '@/core/db/schema';
 import type * as schema from '@/core/db/schema';
 
@@ -402,4 +409,198 @@ export async function listTriageForVideos(db: Db, videoIds: string[]): Promise<A
     .select()
     .from(analyses)
     .where(and(eq(analyses.kind, 'triage'), inArray(analyses.videoId, videoIds)));
+}
+
+// --- notes (M6 free notes; full M11 pipeline arrives in phase 7) ---
+
+export interface NoteRow {
+  id: number;
+  videoId: string | null;
+  conceptId: number | null;
+  type: NoteType;
+  title: string;
+  bodyMd: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function insertNote(db: Db, row: Omit<NoteRow, 'id'>): Promise<number> {
+  const result = await db.insert(notes).values(row);
+  return Number(result.lastInsertRowId);
+}
+
+export async function updateNoteBody(
+  db: Db,
+  id: number,
+  bodyMd: string,
+  updatedAt: number,
+): Promise<void> {
+  await db.update(notes).set({ bodyMd, updatedAt }).where(eq(notes.id, id));
+}
+
+export async function getNoteForVideo(
+  db: Db,
+  videoId: string,
+  type: NoteType,
+): Promise<NoteRow | null> {
+  const rows = await db
+    .select()
+    .from(notes)
+    .where(and(eq(notes.videoId, videoId), eq(notes.type, type)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listRecentNotes(db: Db, limit = 10): Promise<NoteRow[]> {
+  return db.select().from(notes).orderBy(desc(notes.updatedAt)).limit(limit);
+}
+
+// --- flashcards (M6) ---
+
+export interface FlashcardRow {
+  id: number;
+  videoId: string;
+  noteId: number | null;
+  front: string;
+  back: string;
+  sourceSec: number | null;
+  ease: number;
+  intervalDays: number;
+  dueAt: number;
+  reps: number;
+  createdAt: number;
+}
+
+export async function insertFlashcards(db: Db, rows: Omit<FlashcardRow, 'id'>[]): Promise<void> {
+  for (const row of rows) {
+    await db.insert(flashcards).values(row);
+  }
+}
+
+export async function listFlashcardsForVideo(db: Db, videoId: string): Promise<FlashcardRow[]> {
+  return db.select().from(flashcards).where(eq(flashcards.videoId, videoId));
+}
+
+export async function listDueFlashcards(db: Db, now: number, limit = 50): Promise<FlashcardRow[]> {
+  return db
+    .select()
+    .from(flashcards)
+    .where(lte(flashcards.dueAt, now))
+    .orderBy(flashcards.dueAt)
+    .limit(limit);
+}
+
+export async function countDueFlashcards(db: Db, now: number): Promise<number> {
+  const rows = await db
+    .select({ id: flashcards.id })
+    .from(flashcards)
+    .where(lte(flashcards.dueAt, now));
+  return rows.length;
+}
+
+/** Applies the SM-2 result after a review (fields precomputed by features/flashcards/srs). */
+export async function updateFlashcardScheduling(
+  db: Db,
+  cardId: number,
+  patch: { ease: number; intervalDays: number; dueAt: number; reps: number },
+): Promise<void> {
+  await db.update(flashcards).set(patch).where(eq(flashcards.id, cardId));
+}
+
+export async function insertFlashcardReview(
+  db: Db,
+  row: { cardId: number; reviewedAt: number; grade: number },
+): Promise<void> {
+  await db.insert(flashcardReviews).values(row);
+}
+
+/** Distinct review days (for the streak counter), descending. */
+export async function listReviewDays(db: Db, limit = 60): Promise<number[]> {
+  const rows = await db
+    .select({ reviewedAt: flashcardReviews.reviewedAt })
+    .from(flashcardReviews)
+    .orderBy(desc(flashcardReviews.reviewedAt))
+    .limit(limit * 20);
+  return rows.map((row) => row.reviewedAt);
+}
+
+// --- habits (M6) ---
+
+export interface HabitRow {
+  id: number;
+  videoId: string;
+  noteId: number | null;
+  title: string;
+  cue: string | null;
+  active: number;
+  createdAt: number;
+}
+
+export async function insertHabits(db: Db, rows: Omit<HabitRow, 'id'>[]): Promise<void> {
+  for (const row of rows) {
+    await db.insert(habits).values(row);
+  }
+}
+
+export async function listActiveHabits(db: Db): Promise<HabitRow[]> {
+  return db.select().from(habits).where(eq(habits.active, 1));
+}
+
+export async function setHabitCheck(
+  db: Db,
+  habitId: number,
+  day: string,
+  done: boolean,
+): Promise<void> {
+  await db
+    .insert(habitChecks)
+    .values({ habitId, day, done: done ? 1 : 0 })
+    .onConflictDoUpdate({
+      target: [habitChecks.habitId, habitChecks.day],
+      set: { done: done ? 1 : 0 },
+    });
+}
+
+export async function listHabitChecksForDay(
+  db: Db,
+  day: string,
+): Promise<{ habitId: number; done: number }[]> {
+  return db.select().from(habitChecks).where(eq(habitChecks.day, day));
+}
+
+// --- guides (M6) ---
+
+export interface GuideRow {
+  id: number;
+  videoId: string;
+  noteId: number | null;
+  title: string;
+  /** JSON payload — validate with the howto zod schema after parsing. */
+  payload: string;
+  progressStep: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function insertGuide(db: Db, row: Omit<GuideRow, 'id'>): Promise<number> {
+  const result = await db.insert(guides).values(row);
+  return Number(result.lastInsertRowId);
+}
+
+export async function getGuide(db: Db, id: number): Promise<GuideRow | null> {
+  const rows = await db.select().from(guides).where(eq(guides.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listGuides(db: Db): Promise<GuideRow[]> {
+  return db.select().from(guides).orderBy(desc(guides.updatedAt));
+}
+
+export async function updateGuideProgress(
+  db: Db,
+  id: number,
+  progressStep: number,
+  updatedAt: number,
+): Promise<void> {
+  await db.update(guides).set({ progressStep, updatedAt }).where(eq(guides.id, id));
 }

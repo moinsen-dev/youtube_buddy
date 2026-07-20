@@ -60,6 +60,7 @@ const MIGRATION_IDS = [
   '0003_m2_watch_tracking',
   '0004_m3_transcripts',
   '0005_m5_analyses',
+  '0006_m6_knowledge',
 ];
 
 describe('core/db migration runner', () => {
@@ -82,6 +83,18 @@ describe('core/db migration runner', () => {
     ).toBe(true);
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS analyses')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS flashcards')),
+    ).toBe(true);
+    expect(db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS guides'))).toBe(
+      true,
+    );
+    expect(db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS notes'))).toBe(
+      true,
+    );
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS habit_checks')),
     ).toBe(true);
     expect(
       db.executedSql.some((sql) =>

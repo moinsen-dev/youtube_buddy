@@ -20,6 +20,7 @@ import { bestThumbnail, parseIsoDate, parseIsoDuration, videoListSchema } from '
 import { createDbQuotaStore } from '@/core/youtube/quota-store';
 import { AnalysisSection } from '@/features/analysis/analysis-section';
 import { useAuth } from '@/features/auth/auth-context';
+import { KnowledgeSection } from '@/features/knowledge/knowledge-section';
 import { TranscriptPanel } from '@/features/transcripts/transcript-panel';
 import { useTranscript } from '@/features/transcripts/use-transcript';
 import { PlayerTracker } from './player-tracker';
@@ -30,7 +31,7 @@ import { YouTubePlayer } from './youtube-player';
  * tracking, transcript panel and the AI analysis section (triage, summary,
  * chapters with player seeks).
  */
-export function VideoScreen({ videoId }: { videoId: string }) {
+export function VideoScreen({ videoId, startAtSec = 0 }: { videoId: string; startAtSec?: number }) {
   const theme = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -129,8 +130,10 @@ export function VideoScreen({ videoId }: { videoId: string }) {
           }
         }
         if (latest && latest.percentWatched < 0.8) {
-          setResumeSec(latest.positionSec);
+          setResumeSec(startAtSec > 0 ? startAtSec : latest.positionSec);
           setPercent(latest.percentWatched);
+        } else if (startAtSec > 0) {
+          setResumeSec(startAtSec);
         }
       }
       setReady(true);
@@ -284,6 +287,8 @@ export function VideoScreen({ videoId }: { videoId: string }) {
           positionSec={positionSec}
           onSeek={onSeek}
         />
+
+        <KnowledgeSection videoId={videoId} videoTitle={video?.title ?? 'Video'} />
       </ScrollView>
     </View>
   );
