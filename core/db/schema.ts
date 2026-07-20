@@ -1,4 +1,12 @@
-import { integer, primaryKey, real, sqliteTable, text, index } from 'drizzle-orm/sqlite-core';
+import {
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  index,
+  unique,
+} from 'drizzle-orm/sqlite-core';
 
 /**
  * Initial schema — cross-cutting tables only (ARCHITECTURE.md §4,
@@ -111,4 +119,29 @@ export const playlistItems = sqliteTable(
     position: integer('position').notNull(),
   },
   (table) => [primaryKey({ columns: [table.playlistId, table.videoId] })],
+);
+
+// --- M5: Video-Analyse (ARCHITECTURE.md §4) ---
+
+export type AnalysisKind = 'summary' | 'chapters' | 'triage';
+
+export const analyses = sqliteTable(
+  'analyses',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    videoId: text('video_id')
+      .notNull()
+      .references(() => videos.id),
+    /** 'summary' | 'chapters' | 'triage' */
+    kind: text('kind').$type<AnalysisKind>().notNull(),
+    model: text('model').notNull(),
+    promptVersion: text('prompt_version').notNull(),
+    /** JSON payload (zod-validated before write). */
+    payload: text('payload').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_analyses_video_kind').on(table.videoId, table.kind),
+    unique('uq_analyses_video_kind').on(table.videoId, table.kind),
+  ],
 );

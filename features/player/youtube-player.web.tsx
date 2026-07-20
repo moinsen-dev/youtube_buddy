@@ -10,6 +10,8 @@ export type PlayerState = 'playing' | 'paused' | 'ended' | 'buffering';
 export interface YouTubePlayerProps {
   videoId: string;
   startSeconds?: number;
+  /** Seek command — change the value to jump (chapter taps, M5). */
+  seekSeconds?: number;
   onReady?: () => void;
   onProgress?: (positionSec: number, durationSec: number) => void;
   onStateChange?: (state: PlayerState) => void;
@@ -38,6 +40,7 @@ declare global {
       ) => {
         getCurrentTime: () => number;
         getDuration: () => number;
+        seekTo: (seconds: number, allowSeekAhead: boolean) => void;
         destroy: () => void;
       };
       ready?: (callback: () => void) => void;
@@ -68,16 +71,22 @@ let nextPlayerId = 0;
 export function YouTubePlayer({
   videoId,
   startSeconds = 0,
+  seekSeconds,
   onReady,
   onProgress,
   onStateChange,
 }: YouTubePlayerProps) {
   const [elementId] = useState(() => `yt-player-${++nextPlayerId}`);
   const callbacksRef = useRef({ onReady, onProgress, onStateChange });
+  const playerRef = useRef<{ seekTo: (s: number, a: boolean) => void } | null>(null);
 
   useEffect(() => {
     callbacksRef.current = { onReady, onProgress, onStateChange };
   });
+
+  useEffect(() => {
+    if (seekSeconds !== undefined) playerRef.current?.seekTo(seekSeconds, true);
+  }, [seekSeconds]);
 
   useEffect(() => {
     let destroyed = false;
@@ -85,6 +94,7 @@ export function YouTubePlayer({
     let player: {
       getCurrentTime: () => number;
       getDuration: () => number;
+      seekTo: (seconds: number, allowSeekAhead: boolean) => void;
       destroy: () => void;
     } | null = null;
 
@@ -95,6 +105,7 @@ export function YouTubePlayer({
         playerVars: { playsinline: 1, rel: 0, start: Math.floor(startSeconds) },
         events: {
           onReady: () => {
+            playerRef.current = player;
             callbacksRef.current.onReady?.();
             interval = setInterval(() => {
               callbacksRef.current.onProgress?.(player!.getCurrentTime(), player!.getDuration());
@@ -110,6 +121,7 @@ export function YouTubePlayer({
 
     return () => {
       destroyed = true;
+      playerRef.current = null;
       if (interval) clearInterval(interval);
       player?.destroy();
     };

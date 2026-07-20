@@ -12,12 +12,12 @@ import {
   type VideoListItem,
 } from '@/core/db/repositories';
 import { useTheme } from '@/core/theme';
+import { TriageSection } from './triage-section';
 import { VideoCard } from './video-card';
 
 /**
- * Home screen (M2, DESIGN 5.2 — reduced): "Weiterschauen" rail from open
- * watch sessions + "Watch Later" rail from the synced playlist.
- * Triage/SRS sections arrive in later phases.
+ * Home screen (M2 + M5, DESIGN 5.2): "Weiterschauen" rail from open watch
+ * sessions, Watch-Later rail and the triage section with the analysis batch.
  */
 export function HomeScreen() {
   const theme = useTheme();
@@ -97,22 +97,25 @@ export function HomeScreen() {
           Leer — synchronisiere deine Abos in der Bibliothek.
         </Text>
       ) : (
-        <FlatList
-          horizontal
-          data={watchLater}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.rail}
-          renderItem={({ item }) => (
-            <VideoCard
-              title={item.title}
-              thumbnailUrl={item.thumbnailUrl}
-              durationSec={item.durationSec}
-              accessibilityLabel={`Abspielen: ${item.title}`}
-              onPress={() => router.push(`/video/${item.id}`)}
-            />
-          )}
-        />
+        <>
+          <FlatList
+            horizontal
+            data={watchLater}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.rail}
+            renderItem={({ item }) => (
+              <VideoCard
+                title={item.title}
+                thumbnailUrl={item.thumbnailUrl}
+                durationSec={item.durationSec}
+                accessibilityLabel={`Abspielen: ${item.title}`}
+                onPress={() => router.push(`/video/${item.id}`)}
+              />
+            )}
+          />
+          <TriageSection videos={watchLater} />
+        </>
       )}
     </ScrollView>
   );

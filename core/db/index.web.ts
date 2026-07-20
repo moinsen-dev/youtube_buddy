@@ -12,4 +12,7 @@ export async function getDb(): Promise<ExpoSQLiteDatabase<typeof schema> | null>
   return null;
 }
 
+/** No-op on web (no local DB yet — see getDb). */
+export function resetDb(): void {}
+
 export { schema };

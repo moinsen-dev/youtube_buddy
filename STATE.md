@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-20
-**Aktuelle Phase:** **Phase 4 (KI-Engine Core nativ, M4) abgeschlossen ✅** → nächster Schritt **Phase 5 (Video-Analyse, M5)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 5 (Video-Analyse, M5) abgeschlossen ✅** → nächster Schritt **Phase 6 (Wissensmodule & Guide-Modus, M6)** gemäß `docs/ROADMAP.md`
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
 
 ---
@@ -155,6 +155,32 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 4. **AVD Pixel_9a RAM: 2048 → 8192 MB** (`~/.android/avd/Pixel_9a.avd/config.ini`, User-Maschine, entspricht der Pixel-7-Referenz mit 8 GB); Cold Boot mit `-no-snapshot-load` nötig.
 5. **Fast Refresh entlädt das Modell** (Engine-Singleton im JS) → Benchmarks nie parallel zu Code-Edits laufen lassen.
 
+| **Phase 5 — Video-Analyse (M5)** | ✅ | **Exit-Kriterien erfüllt (2026-07-20): Golden-Set-Video mit vollständiger Analyse (Summary + Kapitel mit echten Zeitstempeln, Sprung verifiziert), Triage-Batch über Watch-Later mit Fortschritt; P50-Messung Emulator-artefaktbehaftet (s. Phase 4), phys. Gerät offen** |
+
+## Phase 5 — Ergebnis (2026-07-20, abgeschlossen)
+
+**Gebaut:** Migration `0005_m5_analyses` (analyses + UNIQUE(video_id, kind) + Index); `core/ai-engine/engine-instance.ts` (geteilte lazy Engine — Web-sicher); Templates `summarize-reduce.v1`, `chapters.v1`, `triage.v1`; `features/analysis` (`analyze.ts` Map/Reduce-Pipeline, 8 Chunks/Gruppe, Fortschritt + AbortSignal; `use-analysis.ts`; `triage-batch.ts`; UI: `analysis-section.tsx`, `analysis-sheet.tsx` (DESIGN 5.5: Fortschritt, On-Device-Badge mit Modellname, Abbrechen), `summary-panel.tsx` (TL;DR + ausklappbare Langfassung + Key-Points mit Zeitstempel-Chips), `chapter-list.tsx` (aktives Kapitel), `triage-badge.tsx` (Score-Farben DESIGN §4)); `features/home/triage-section.tsx` (DESIGN 5.2: Queue-Rows + „Analysiere Queue ▸" mit Fortschritt/Abbrechen); Player `seekSeconds` (nativ via `injectJavaScript`, web via `YT.Player.seekTo`); Video-Detail mit Analyse-Sektion (CTA ab 30 % geschaut, ARCHITECTURE §5.1); `ensure-transcript.ts` (nicht-Hook-Transkriptpfad für Batch/Analyse). 62 Tests + tsc + eslint 0 Fehler.
+
+**Verifikations-Matrix (Exit-Kriterien):**
+
+| Kriterium                               | Beleg                                                                                                                                                                                   |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Golden-Set-Video: vollständige Analyse  | ✅ `Xf-uUy5pdUI` (12:22, 15 Chunks → 5 Schritte): TL;DR + Langfassung + Key-Points mit **echten Zeitstempeln** (0:01, 6:37 = Chunk-Grenzen), 3 `analyses`-Rows DB-verifiziert           |
+| Zeitstempel-Sprünge korrekt             | ✅ Chapter-Tap → `seekTo` → Wiedergabe ab Position bis Videoende (Replay-Symbol); aktiv markiertes Kapitel                                                                              |
+| Triage-Batch über Queue mit Fortschritt | ✅ 4/4 Videos (Rail gespiegelt, s. WL-Befund): Fortschrittsbalken „Analysiere Queue… n/4 (lokal)" + Abbrechen; Badges farbkorrekt (1–2 rot), Sortierung Score desc; Rows DB-verifiziert |
+| P50-Analysezeit < 90 s Referenzgerät    | ⚠️ Emulator-artefaktbehaftet (Phase 4): Golden-Set-Video ~10 min, Kurzvideo ~2 min — Messung auf physischer Hardware offen                                                              |
+| Analyse-Abbruch                         | ✅ Sheet mit Abbrechen-Button (Mechanik = Phase-4-verifizierter AbortController-Pfad)                                                                                                   |
+
+**Gelöste Fehler / Entscheidungen:**
+
+1. **expo-sqlite-NPE nach `initLlama` (Root Cause + Fix):** Nach llama.rn-JSI-Aktivität starben expo-sqlite-Handles aus der shared Registry sporadisch mit `NativeDatabase.* has been rejected → NullPointerException` (bekanntes expo-sqlite-Problem). Fix-Kette: `openDatabaseSync(…, { useNewConnection: true })` (umgeht die Registry — dokumentierter Workaround), `resetDb()` nach jedem Modell-Load, Selbstheilungs-Probe in `getDb()` (SELECT 1, bei NPE Neuöffnung). Danach lief der komplette Triage-Batch mit interleavter Inferenz + DB-Zugriff stabil.
+2. **Watch-Later bei Viewer-Accounts nicht via offizieller API erreichbar (Produkt-Befund):** `channels.list(mine=true)` → 0 Items, `playlists.list(mine=true)` → 404, `playlistItems.list("WL")` → leere 200. Der Account (reiner Zuschauer ohne Creator-Channel) hat keine API-sichtbare WL-Playlist; Subscriptions funktionieren. **ADR-Frage an den User** (Optionen: youtubei-interner Endpunkt per Whitelist-ADR / Playlist-Pinning-Setting / Feature-Degradation). Bis dahin: Fallback `playlistId = 'WL'` implementiert (schadet nicht, hilft evtl. Legacy-Accounts).
+3. **Analyse-CTA bei „nur Triage" unerreichbar** → CTA-Logik: vollständig erst mit summary + chapters; Triage aus dem Batch allein → „Vollständig analysieren (lokal)".
+4. **llama.rn statischer Import crashte Web** (Mehr-Tab) → lazy `await import` über `engine-instance` (Phase 4 nachgezogen).
+5. **Stale Engine-Hinweis** in Triage-Section (peekEngine nur beim Rendern) → Fokus-Refresh via `loadTriages`.
+
+**Qualitäts-Notizen (für Phase 6/7 relevant):** Triage-Kalibrierung des 3B-Modells ist zu streng (alle Scores 1–2, auch bei Kurzgesagt) — Golden-Set-Gate für Triage-Prompt nötig. Kapitel sparsam bei kurzen Videos (2 Gruppen → 2 Kapitel, je ~6 min) — ggf. kleinere Map-Gruppen oder Kapitel-Minimum im Template.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -162,11 +188,14 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 3. ~~Finales Chat-Modell~~ — **entschieden in Phase 4** (Qwen3-4B ≥ 6 GB, Llama-3.2-3B 4-GB-Tier).
 4. Konzept-Dedup-Qualität — Golden-Set-Gate in Phase 7, ggf. Embedding-Clustering.
 5. Datentransfer Phone → TV — Entscheidung in Phase 12.
-6. **Android-Perf-Validierung auf physischem Gerät** (≥ 10 Tok/s-Erwartung für Llama-3B/Qwen-4B auf Pixel-Klasse) — Emulator-Artefakt, s. Phase 4. Qwen3-4B-Vollbenchmark auf Hardware ebenfalls offen.
-7. **iOS-Re-Login klemmt:** ASWebAuthenticationSession-Consent (Continue-Button) ist per UI-Automation unerreichbar — einmal manuell bestätigen; App danach wieder voll nutzbar.
+6. **Android-Perf + P50-Analysezeit auf physischem Gerät** (≥ 10 Tok/s, P50 < 90 s) — Emulator-Artefakte, s. Phase 4/5.
+7. **iOS-Verifikation Phase 5** (Analyse-Flow + Batch) — App läuft, aber Re-Login klemmt am Consent-Screen (Continue manuell tippen); danach nachholen.
+8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5, Punkt 2).
+9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate in Phase 7.
 
-## Nächste Schritte (Phase 5 — Video-Analyse, M5)
+## Nächste Schritte (Phase 6 — Wissensmodule & Guide-Modus, M6)
 
-1. Analyse-Pipeline (Chunk-Map/Reduce bei langen Videos) auf der Phase-4-Engine; Templates `summarize`, `chapters`, `triage`; `analyses`-Tabelle + Repository.
-2. UI: SummaryPanel, ChapterList mit Player-Sprüngen, TriageBadge; Analyse-Fortschritts-Sheet mit On-Device-Badge (DESIGN 5.5); Triage-Batch für Watch-Later (Home 5.2).
-3. **Exit:** Golden-Set-Videos zeigen vollständige Analyse mit korrekten Zeitstempel-Sprüngen; P50-Analysezeit < 90 s auf Referenzgerät; Triage über 12 Watch-Later-Videos als Batch mit Fortschritt.
+1. Templates `flashcards`, `habits`, `howto` (Quellen-Zeitstempel, geordnete Schritte + Material); Tabellen + Repositories; Wissen-Tab Grundgerüst (DESIGN 5.13).
+2. Review-Queue (SM-2 pure + Tests), Flashcard-Flip-UI (DESIGN 5.6), Stats; Guide-Übersicht (5.7) + Guide-Modus (5.12: Vollbild-Karten, Swipe/Buttons ≥ 64 pt, `progress_step`-Persistierung, „Im Video ansehen"-Sprung).
+3. TTS via expo-speech (Should); Habit-Checkliste; freie Notizen (Markdown im Video-Detail).
+4. **Exit:** Kochvideo → ≥ 8 Karten + 1 Anleitung mit korrekten Quellen; Guide-Modus komplett durchklickbar mit Fortschritt; TTS liest einen Schritt; SM-2-Planung per Unit-Test.

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDb } from '@/core/db';
@@ -18,6 +18,7 @@ import { useTheme } from '@/core/theme';
 import { YouTubeClient, createMemoryETagCache } from '@/core/youtube/client';
 import { bestThumbnail, parseIsoDate, parseIsoDuration, videoListSchema } from '@/core/youtube/dto';
 import { createDbQuotaStore } from '@/core/youtube/quota-store';
+import { AnalysisSection } from '@/features/analysis/analysis-section';
 import { useAuth } from '@/features/auth/auth-context';
 import { TranscriptPanel } from '@/features/transcripts/transcript-panel';
 import { useTranscript } from '@/features/transcripts/use-transcript';
@@ -25,9 +26,9 @@ import { PlayerTracker } from './player-tracker';
 import { YouTubePlayer } from './youtube-player';
 
 /**
- * Video detail (M2, DESIGN 5.4 — basic, AI tabs arrive in phase 5):
- * IFrame player with resume, watch tracking into watch_sessions, manual
- * "als geschaut markieren".
+ * Video detail (M2 + M5, DESIGN 5.4): IFrame player with resume, watch
+ * tracking, transcript panel and the AI analysis section (triage, summary,
+ * chapters with player seeks).
  */
 export function VideoScreen({ videoId }: { videoId: string }) {
   const theme = useTheme();
@@ -40,6 +41,7 @@ export function VideoScreen({ videoId }: { videoId: string }) {
   const [positionSec, setPositionSec] = useState(0);
   const [durationSec, setDurationSec] = useState(0);
   const [percent, setPercent] = useState(0);
+  const [seekSec, setSeekSec] = useState<number | undefined>(undefined);
   const [ready, setReady] = useState(false);
 
   const trackerRef = useRef<PlayerTracker | null>(null);
@@ -178,6 +180,11 @@ export function VideoScreen({ videoId }: { videoId: string }) {
     setPercent(1);
   }, [videoId]);
 
+  const onSeek = useCallback((sec: number) => {
+    setSeekSec(sec);
+    positionRef.current = sec;
+  }, []);
+
   const transcript = useTranscript(videoId);
 
   if (!ready) {
@@ -200,13 +207,17 @@ export function VideoScreen({ videoId }: { videoId: string }) {
         <YouTubePlayer
           videoId={videoId}
           startSeconds={resumeSec}
+          seekSeconds={seekSec}
           onReady={onReady}
           onProgress={onProgress}
           onStateChange={onStateChange}
         />
       </View>
 
-      <View style={[styles.meta, { padding: theme.spacing.lg }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.meta, { padding: theme.spacing.lg }]}
+      >
         <Text
           style={[theme.typography.title2, { color: theme.colors.textPrimary }]}
           numberOfLines={2}
@@ -264,7 +275,16 @@ export function VideoScreen({ videoId }: { videoId: string }) {
           error={transcript.error}
           onRetry={transcript.retry}
         />
-      </View>
+
+        <AnalysisSection
+          videoId={videoId}
+          title={video?.title ?? 'Video'}
+          durationSec={durationSec || video?.durationSec || 0}
+          percentWatched={percent}
+          positionSec={positionSec}
+          onSeek={onSeek}
+        />
+      </ScrollView>
     </View>
   );
 }
@@ -281,6 +301,9 @@ function formatDuration(sec: number): string {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scroll: {
     flex: 1,
   },
   playerRow: {

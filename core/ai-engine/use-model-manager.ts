@@ -1,16 +1,18 @@
 import * as Device from 'expo-device';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { resetDb } from '@/core/db';
 import { runBenchmark, type BenchmarkResult } from './benchmark';
+import { getEngine, peekEngine } from './engine-instance';
 import { downloadModel, freeStorageBytes, isModelDownloaded } from './model-manager';
 import { MODEL_REGISTRY, recommendedModel } from './model-registry';
 import { pingV1, pingV1Schema, type PingV1Output } from './prompts/ping.v1';
-import type { LlamaCppEngine } from './llama-cpp-engine';
 import type { ModelSpec } from './types';
 
 /**
  * Model management hook (M4): per-model state machine, download with
- * progress, load/unload into the engine, plus a smoke test (ping.v1).
+ * progress, load/unload into the shared engine (engine-instance), plus a
+ * smoke test (ping.v1).
  */
 
 export type ModelStatus = 'missing' | 'downloading' | 'downloaded' | 'loaded' | 'error';
@@ -30,18 +32,6 @@ export interface SmokeResult {
   repaired: boolean;
 }
 
-// Engine is created lazily: llama.rn is native-only, so a static import
-// would break the web bundle (Mehr tab). On web `engine` stays null and the
-// controls that need it stay disabled (no entry ever reaches 'loaded').
-let engine: LlamaCppEngine | null = null;
-async function getEngine(): Promise<LlamaCppEngine> {
-  if (!engine) {
-    const { LlamaCppEngine } = await import('./llama-cpp-engine');
-    engine = new LlamaCppEngine();
-  }
-  return engine;
-}
-
 export function useModelManager() {
   const [entries, setEntries] = useState<ModelEntry[]>([]);
   const [freeBytes, setFreeBytes] = useState(0);
@@ -57,7 +47,7 @@ export function useModelManager() {
     const next = await Promise.all(
       MODEL_REGISTRY.map(async (spec) => {
         const downloaded = await isModelDownloaded(spec);
-        const loaded = engine?.loadedModelId === spec.id;
+        const loaded = peekEngine()?.loadedModelId === spec.id;
         return {
           spec,
           status: (loaded ? 'loaded' : downloaded ? 'downloaded' : 'missing') as ModelStatus,
@@ -110,6 +100,9 @@ export function useModelManager() {
       patchEntry(spec.id, { error: undefined });
       try {
         await (await getEngine()).loadModel(spec);
+        // Android: initLlama invalidates the sqlite JSI handle (prepareSync
+        // NPE) — force a fresh handle opened after the load.
+        resetDb();
         await refresh();
       } catch (error) {
         patchEntry(spec.id, {
@@ -122,15 +115,17 @@ export function useModelManager() {
   );
 
   const unload = useCallback(async () => {
-    if (engine) await engine.unloadModel();
+    const current = peekEngine();
+    if (current) await current.unloadModel();
     await refresh();
   }, [refresh]);
 
   const remove = useCallback(
     async (spec: ModelSpec) => {
       const { deleteModel } = await import('./model-manager');
-      if (engine?.loadedModelId === spec.id) {
-        await engine.unloadModel();
+      const current = peekEngine();
+      if (current?.loadedModelId === spec.id) {
+        await current.unloadModel();
       }
       await deleteModel(spec);
       await refresh();

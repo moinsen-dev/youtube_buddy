@@ -1,7 +1,8 @@
-import { eq, isNull, notInArray, desc } from 'drizzle-orm';
+import { eq, isNull, notInArray, desc, and, inArray } from 'drizzle-orm';
 import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 
 import {
+  analyses,
   channels,
   playlists,
   playlistItems,
@@ -11,6 +12,7 @@ import {
   watchSessions,
   transcriptChunks,
   transcripts,
+  type AnalysisKind,
 } from '@/core/db/schema';
 import type * as schema from '@/core/db/schema';
 
@@ -344,4 +346,60 @@ export async function listTranscriptChunks(db: Db, videoId: string): Promise<Tra
     .from(transcriptChunks)
     .where(eq(transcriptChunks.videoId, videoId))
     .orderBy(transcriptChunks.idx);
+}
+
+// --- analyses (M5) ---
+
+export type { AnalysisKind };
+
+export interface AnalysisRow {
+  videoId: string;
+  kind: AnalysisKind;
+  model: string;
+  promptVersion: string;
+  /** JSON string — validate with the kind's zod schema after parsing. */
+  payload: string;
+  createdAt: number;
+}
+
+/** Insert or replace the analysis for (videoId, kind). */
+export async function upsertAnalysis(db: Db, row: AnalysisRow): Promise<void> {
+  await db
+    .insert(analyses)
+    .values(row)
+    .onConflictDoUpdate({
+      target: [analyses.videoId, analyses.kind],
+      set: {
+        model: row.model,
+        promptVersion: row.promptVersion,
+        payload: row.payload,
+        createdAt: row.createdAt,
+      },
+    });
+}
+
+export async function getAnalysis(
+  db: Db,
+  videoId: string,
+  kind: AnalysisKind,
+): Promise<AnalysisRow | null> {
+  const rows = await db
+    .select()
+    .from(analyses)
+    .where(and(eq(analyses.videoId, videoId), eq(analyses.kind, kind)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listAnalyses(db: Db, videoId: string): Promise<AnalysisRow[]> {
+  return db.select().from(analyses).where(eq(analyses.videoId, videoId));
+}
+
+/** Triage payloads for a set of videos (home batch badges), keyed by videoId. */
+export async function listTriageForVideos(db: Db, videoIds: string[]): Promise<AnalysisRow[]> {
+  if (videoIds.length === 0) return [];
+  return db
+    .select()
+    .from(analyses)
+    .where(and(eq(analyses.kind, 'triage'), inArray(analyses.videoId, videoIds)));
 }

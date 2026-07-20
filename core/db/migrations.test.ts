@@ -59,6 +59,7 @@ const MIGRATION_IDS = [
   '0002_m1_youtube_read',
   '0003_m2_watch_tracking',
   '0004_m3_transcripts',
+  '0005_m5_analyses',
 ];
 
 describe('core/db migration runner', () => {
@@ -78,6 +79,14 @@ describe('core/db migration runner', () => {
     ).toBe(true);
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS transcript_chunks')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS analyses')),
+    ).toBe(true);
+    expect(
+      db.executedSql.some((sql) =>
+        sql.startsWith('CREATE INDEX IF NOT EXISTS idx_analyses_video_kind'),
+      ),
     ).toBe(true);
     expect(db.appliedIds).toEqual(MIGRATION_IDS);
   });

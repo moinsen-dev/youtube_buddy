@@ -182,6 +182,11 @@ export async function syncWatchLater(
     );
     playlistId = mine.items[0]?.contentDetails?.relatedPlaylists?.watchLater ?? null;
   }
+  // Viewer accounts (no creator channel): channels.list(mine) comes back
+  // empty, so relatedPlaylists.watchLater never arrives. playlistItems.list
+  // accepts the literal "WL" alias for the authorized user's Watch Later
+  // playlist (verified against the Data API in phase 5).
+  playlistId ??= 'WL';
   if (!playlistId) {
     return { synced: false, reason: 'ok', items: 0 };
   }

@@ -15,6 +15,8 @@ export interface YouTubePlayerProps {
   videoId: string;
   /** Resume position. */
   startSeconds?: number;
+  /** Seek command — change the value to jump (chapter taps, M5). */
+  seekSeconds?: number;
   /** Fires once when the player API is ready (tracking starts here). */
   onReady?: () => void;
   /** ~1/s while the player runs: (positionSec, durationSec). */
@@ -68,11 +70,13 @@ function buildHtml(videoId: string, startSeconds: number): string {
 export function YouTubePlayer({
   videoId,
   startSeconds = 0,
+  seekSeconds,
   onReady,
   onProgress,
   onStateChange,
 }: YouTubePlayerProps) {
   const html = useMemo(() => buildHtml(videoId, startSeconds), [videoId, startSeconds]);
+  const webViewRef = useRef<WebView>(null);
   const onReadyRef = useRef(onReady);
   const onProgressRef = useRef(onProgress);
   const onStateChangeRef = useRef(onStateChange);
@@ -82,6 +86,13 @@ export function YouTubePlayer({
     onProgressRef.current = onProgress;
     onStateChangeRef.current = onStateChange;
   });
+
+  useEffect(() => {
+    if (seekSeconds === undefined) return;
+    webViewRef.current?.injectJavaScript(
+      `if (window.player && player.seekTo) { player.seekTo(${Math.floor(seekSeconds)}, true); } true;`,
+    );
+  }, [seekSeconds]);
 
   const onMessage = (event: WebViewMessageEvent) => {
     try {
@@ -105,6 +116,7 @@ export function YouTubePlayer({
   return (
     <View style={styles.container}>
       <WebView
+        ref={webViewRef}
         source={{ html, baseUrl: 'http://localhost:8081' }}
         onMessage={onMessage}
         javaScriptEnabled

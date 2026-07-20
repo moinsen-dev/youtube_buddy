@@ -52,6 +52,13 @@ export const migrations: Migration[] = [
       'CREATE INDEX IF NOT EXISTS idx_transcript_chunks_video_idx ON transcript_chunks (video_id, idx)',
     ],
   },
+  {
+    id: '0005_m5_analyses',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS analyses (id INTEGER PRIMARY KEY AUTOINCREMENT, video_id TEXT NOT NULL REFERENCES videos(id), kind TEXT NOT NULL, model TEXT NOT NULL, prompt_version TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(video_id, kind))',
+      'CREATE INDEX IF NOT EXISTS idx_analyses_video_kind ON analyses (video_id, kind)',
+    ],
+  },
 ];
 
 /**
