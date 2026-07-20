@@ -214,6 +214,24 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 - App „frisiert" keinen YouTube-Content, speichert keine Videos, sondern Metadaten/Transkripte zum persönlichen Gebrauch. Dennoch: Untertitel-Extraktion ist die einzige echte Grauzone → Risiko akzeptiert, Fallback geplant.
 - Google-API-Branding- und ToS-Richtlinien beachten (YouTube-Logo-Nutzung, „powered by YouTube" wo erforderlich).
 
+### 7.6 ADR (2026-07-20): Pro-Tier mit E2E-Sync + Cloud-Analyse (Opt-in)
+
+**Beschluss:** Nach v1 kommt ein **Paid Pro-Tier** mit zwei Modulen — (a) geräteübergreifende **E2E-verschlüsselte Synchronisation** der lokalen Daten, (b) **Cloud-Analyse** (serverseitiges LLM) als klar gekennzeichnetes Opt-in. **Free bleibt unverändert 100 % local-only** — das Leitprinzip 1 (§1) gilt weiterhin für die Free-Version; sämtliche Server-Kommunikation des Pro-Tiers ist Opt-in und pro Feature aktivierbar.
+
+**Architektur-Entscheidungen:**
+
+| Punkt | Entscheidung | Begründung |
+|---|---|---|
+| Server-Stack | **Supabase** (EU-Region): Postgres + Auth + Realtime + Storage | Schnellster belastbarer Weg zum Paid-Produkt; Row-Level-Security passt zum E2E-Modell (Server sieht nur Ciphertext) |
+| Cloud-LLM | **Groq** (Llama-70B-Klasse) | Großer Qualitätssprung ggü. 3–4B on-device, sehr schnell, günstig; gleiche Prompt-Templates + Golden-Set-Gate wie on-device |
+| Payment | **RevenueCat** | Store-übergreifende Subscriptions + Entitlements ohne Eigenbau |
+| Sync-Modell | E2E (Client-seitige Verschlüsselung, Passphrase/Device-Key + Recovery-Code), pro Entität mit `updated_at`-LWW; Modelle, Caches, Transkript-Rohdaten bleiben lokal | Datenschutz by Design bleibt gewahrt (Server = blind); LWW reicht für Einzelnutzer-Sync |
+| Cloud-Analyse | Drittes Backend `CloudEngine` hinter dem `LLMEngine`-Interface; Badge „Cloud (Opt-in)" als Invers zum On-Device-Badge | Keine Feature-Forks — Engine-Abstraktion (§3) trägt das ohne UI-Sonderfälle |
+
+**Whitelist-Erweiterung (Opt-in, erst ab Phase 10.5 aktiv):** Supabase-Projekt-Endpunkte (`*.supabase.co`, Auth/REST/Realtime), Groq API (`api.groq.com`), RevenueCat API (`api.revenuecat.com`) + Store-Belege. Kein Analytics-/Crash-SDK, kein eigenes Tracking — auch im Pro-Tier nicht.
+
+**Offene Detailentscheidungen für Phase 10.5:** Schlüsselableitung (Passphrase vs. Device-Key + Recovery), Konflikt-UI bei LWW-Kollisionen, Pro-Preis/Scope-Abgrenzung, Groq-Modell-Pinning via Golden-Set-Benchmark.
+
 ---
 
 ## 8. Erfolgsmetriken (alle lokal messbar, kein Telemetrie-Server)
@@ -234,7 +252,7 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 ## 9. Offene Fragen / spätere Entscheidungen
 
 1. **Takeout-Import** (historischer Verlauf): Aufwand mittel, Nutzen hoch für Persona A — als Could in Phase 10 eingeplant, Entscheidung nach erster Nutzung.
-2. **Sync v2:** Falls je gewünscht, nur E2E-verschlüsselt (z. B. via iCloud/ eigenem Geräte-zu-Gerät-Protokoll) — explizit außerhalb dieser Planung.
+2. ~~**Sync v2**~~ → **beschlossen (ADR §7.6, 2026-07-20):** E2E-Sync als Paid-Pro-Modul (Supabase), Umsetzung ab Phase 10.5.
 3. **Whisper-Fallback:** Abhängig davon, ob Audio-Beschaffung für Transkription sauber lösbar ist (ToS). Erst nach Phase 3 evaluieren.
 4. **Modell-Auswahl final:** Benchmark auf Zielgeräten in Phase 4 (Kandidaten: Qwen3-4B-Instruct, Gemma-3-4B-it, Llama-3.2-3B-Instruct, jeweils Q4_K_M GGUF; Embedding: multilingual-e5-small).
-5. **Monetarisierung:** außerhalb von v1; Local-Only ohne Serverkosten hält den Druck niedrig.
+5. ~~**Monetarisierung**~~ → **beschlossen (ADR §7.6, 2026-07-20):** Paid Pro-Tier (E2E-Sync + Cloud-Analyse Opt-in) via RevenueCat; Free bleibt 100 % local-only.

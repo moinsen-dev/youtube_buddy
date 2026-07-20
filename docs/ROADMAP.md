@@ -78,6 +78,12 @@ Aufwandsklassen (grob, 1 Dev): **S** < 1 Woche · **M** 1–2 Wochen · **L** 2�
 - **Abhängigkeiten:** Phasen 1 + 2 (Datenbasis), sinnvoll erst nach einigen Wochen Tracking — fachlich letztes nativ-Feature.
 - **Exit-Kriterien:** Report zeigt reale „💤"-Kanäle; Unsubscribe-Flow funktioniert Ende-zu-Ende (Test-Account), inkl. Scope-Dialog und lokaler Aktualisierung.
 
+## Phase 10.5 — Pro-Tier: E2E-Sync & Cloud-Analyse *(L)* *(ADR PRD §7.6, beschlossen 2026-07-20)*
+**Ziel:** Paid Pro-Tier: Geräteübergreifender E2E-Sync + Opt-in-Cloud-Analyse — Free bleibt 100 % local-only.
+- **Scope:** Supabase-Projekt (EU): Auth (Google), Tabellen für Sync-Entitäten (RLS, nur Ciphertext); `core/sync` (Client-Verschlüsselung Passphrase/Device-Key + Recovery-Code, LWW-Upsert/Pull-Delta, Modell-/Cache-Ausschlüsse); `CloudEngine` (Groq, `LLMEngine`-Interface) mit Opt-in-Toggle + „Cloud"-Badge + On-Device-Fallback; RevenueCat-Entitlements (lokal gecacht); Sync-Onboarding (Passphrase/Recovery-Code erklären); Golden-Set-Benchmark Groq-Modell → Pinning.
+- **Abhängigkeiten:** Phasen 4–7 (Datenmodell + Engines final); PRD §7.6 ADR.
+- **Exit-Kriterien:** Zwei Geräte synchronisieren Analysen/Karten/Notizen Ende-zu-Ende (Server sieht nur Ciphertext, verifiziert im Supabase-Dashboard); Cloud-Analyse liefert für ein Golden-Set-Video bessere Analyse als On-Device (manueller Vergleich dokumentiert); Kauf-Flow (Sandbox) aktiviert Pro auf zwei Plattformen; Free-Nutzer ohne Pro sehen keinerlei Server-Traffic.
+
 ## Phase 11 — Web-KI & Web-Polish (M10, Teil 1) *(M)*
 **Ziel:** Feature-Parität im Browser, soweit technisch möglich.
 - **Scope:** `WebLLMEngine` (+ transformers.js Embeddings) hinter `LLMEngine`; WebGPU-Feature-Check → ohne WebGPU: Read-only-Modus (zeigt importierte Analysen/Karten/Notizen/Graph) mit klarer Hinweis-UX; Modell-Download über Browser-Cache-API; Web-Layout-Polish (Sidebar, Tastaturkürzel `/` Suche, Drag-Scroll-Rails); Graph-Rendering im Web (d3/SVG); SpeechSynthesis-TTS im Guide-Modus; Export/Import als Datei-Download/Upload inkl. Vault-ZIP (Brücke Phone ↔ Web).
