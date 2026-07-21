@@ -68,6 +68,49 @@ export class LlamaCppEngine implements LLMEngine {
     this.loadedSpec = null;
   }
 
+  // --- Embedding backend (M8): separate lightweight context next to the
+  // chat context — the chat model stays resident.
+
+  private embeddingContext: LlamaContext | null = null;
+  private embeddingSpec: ModelSpec | null = null;
+
+  get loadedEmbeddingModelId(): string | null {
+    return this.embeddingSpec?.id ?? null;
+  }
+
+  async loadEmbeddingModel(spec: ModelSpec): Promise<void> {
+    if (this.embeddingSpec?.id === spec.id && this.embeddingContext) return;
+    const path = await modelPath(spec);
+    const info = await FileSystem.getInfoAsync(path);
+    if (!info.exists) {
+      throw new Error(`LlamaCppEngine: embedding model '${spec.id}' is not downloaded yet`);
+    }
+    if (this.embeddingContext) {
+      await this.embeddingContext.release();
+      this.embeddingContext = null;
+      this.embeddingSpec = null;
+    }
+    this.embeddingContext = await initLlama({
+      model: path,
+      n_ctx: spec.contextLength,
+      embedding: true,
+      // Sentence embedding (MiniLM) expects mean pooling + L2 normalization
+      // (otherwise vectors collapse toward a uniform direction — verified in
+      // phase 9).
+      pooling_type: 'mean',
+      embd_normalize: 2,
+    });
+    this.embeddingSpec = spec;
+  }
+
+  async unloadEmbeddingModel(): Promise<void> {
+    if (this.embeddingContext) {
+      await this.embeddingContext.release();
+      this.embeddingContext = null;
+    }
+    this.embeddingSpec = null;
+  }
+
   async generate<T>(req: GenerateRequest<T>): Promise<GenerateResult<T>> {
     if (!this.context) {
       throw new Error('LlamaCppEngine: no model loaded (call loadModelFromPath first)');
@@ -145,7 +188,17 @@ export class LlamaCppEngine implements LLMEngine {
     return { text: result.text ?? '', tokensPerSecond, totalTokens, durationMs };
   }
 
-  async embed(): Promise<Float32Array[]> {
-    throw new Error('embed: backend decision lands in phase 9 (ARCHITECTURE §11)');
+  async embed(texts: string[]): Promise<Float32Array[]> {
+    if (!this.embeddingContext) {
+      throw new Error('embed: no embedding model loaded (call loadEmbeddingModel first)');
+    }
+    const wrap = this.embeddingSpec?.embedSpecialTokens;
+    const vectors: Float32Array[] = [];
+    for (const text of texts) {
+      const wrapped = wrap ? `${wrap.prefix}${text}${wrap.suffix}` : text;
+      const result = await this.embeddingContext.embedding(wrapped);
+      vectors.push(new Float32Array(result.embedding));
+    }
+    return vectors;
   }
 }

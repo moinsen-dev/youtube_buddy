@@ -29,6 +29,15 @@ export interface ModelSpec {
   contextLength: number;
   /** Minimum device RAM in bytes needed to run comfortably. */
   minRamBytes: number;
+  /**
+   * Special-token wrap for embedding inputs (M8). llama.rn tokenizes
+   * embedding prompts without special tokens (its loadPrompt only adds BOS
+   * when the vocab asks for it, and never SEP), while llama.cpp's reference
+   * embedding path wraps every input as `<s>…</s>` for this tokenizer.
+   * Without the wrap, short queries land in a distorted region of the
+   * embedding space — verified in phase 9 (query↔doc ranking collapsed).
+   */
+  embedSpecialTokens?: { prefix: string; suffix: string };
   /** Free-form note for the UI (e.g. recommendation). */
   note?: string;
 }

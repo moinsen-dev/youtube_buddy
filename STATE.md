@@ -2,8 +2,8 @@
 
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
-**Stand:** 2026-07-20
-**Aktuelle Phase:** **Phase 8 (Reise-Modul, M7) abgeschlossen ✅** → nächster Schritt **Phase 9 (Semantische Suche, M8)** gemäß `docs/ROADMAP.md`
+**Stand:** 2026-07-21
+**Aktuelle Phase:** **Phase 9 (Semantische Suche, M8) abgeschlossen ✅** → nächster Schritt **Phase 10 (Subscription-Hygiene, M9)** gemäß `docs/ROADMAP.md`
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -258,6 +258,28 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 2. **OSM 403 „access blocked":** RN `Image` sendet einen generischen Agenten (wird blockiert); Fix = Tiles via `expo-file-system.downloadAsync` mit explizitem `User-Agent` + persistenter Disk-Cache (policy-konform). Fresco-Cache hatte die 403-Tiles zusätzlich zwischengespeichert (Cache-Clear nötig nach dem Fix).
 3. **extract_places.v1 → v2** (Golden-Set-Prinzip): v1 lieferte nur Städte (3 < 4 Exit); v2 mit POIs/Stadtteilen → 6 Orte.
 
+## Phase 9 — Ergebnis (2026-07-21, abgeschlossen)
+
+**Gebaut:** Migration `0009_m8_embeddings` (`embeddings` mit UNIQUE(owner_type, owner_id, model), `chunks_fts`, `notes_fts` FTS5); `LlamaCppEngine.embed` mit separatem Embedding-Kontext (Chat-Modell bleibt resident; `pooling_type: 'mean'`, `embd_normalize: 2`); `core/search` (float32↔bytes, Cosine, **JS-kNN** — bewusst kein sqlite-vec: trivial bei ~10⁴ Items, kein nativer Build), RRF-Hybrid (Vektor + FTS5, beide Kanäle Gewicht 2), `ownerText` je Owner-Typ, `indexMissingEmbeddings` (inkrementell + FTS-Rebuild); Suche-Screen (DESIGN 5.9) mit Modell-Lifecycle (Download/Load), Index-Button, Filter-Chips, Ergebnis-Karten mit Hydration und Navigation via `?t=`. 104 Tests + tsc + eslint 0 Fehler.
+
+**Verifikations-Matrix (Exit-Kriterien):**
+
+| Kriterium                      | Beleg                                                                                                                                                                                                                                                                                        |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Golden-Queries ≥ 8/10 in Top-3 | ✅ **9/10** (Kaiju, Sauerteig, Japan-Reiseroute, El Niño, Raubtiere, sourdough feeding, day trips Tokyo, Naturgewalt, Giftpflanzen ✓; nur „erstes Video im Zoo" ✗ — das 19-s-Transkript enthält das Wort „zoo" nie, Korpus-Limit, kein Ranking-Fehler). Screenshots: `.verification/phase9/` |
+| Suche < 300 ms                 | ✅ 155–238 ms bei 124 indexierten Items (79 Chunks, 18 Notizen, 12 Konzepte, 15 Analysen)                                                                                                                                                                                                    |
+
+**Gelöste Fehler / Entscheidungen (alle geräte-verifiziert):**
+
+1. **multilingual-e5-small unbrauchbar:** XLM-RoBERTa-Basis — das in llama.rn 0.12.6 gebundelte llama.cpp kennt die Architektur nicht (kein `xlm-roberta` in `llama-arch.cpp`); das Modell lief unter der generischen `bert`-Zuordnung und produzierte konstante Vektoren (Kaiju vs. Microwelt = 1.0000, pairwise-Median 0,909). Auch bge-m3 fällt damit weg (gleiche Basis). → **paraphrase-multilingual-MiniLM-L12-v2** (plain BERT, 384-dim, 50+ Sprachen, mykor Q4_K_M-Konvertierung — cstr-Konvertierungen nutzen Nicht-Standard-Metadaten und laden in llama.rn gar nicht).
+2. **RRF-ID-Kollision:** Fusion war nur per `owner_id` gekeyed — Notiz 3 kollidierte mit Analyse 3/Chunk 3, FTS-Gewicht landete auf falschen Typen und scrambled das Ranking. Fix: typisierte Keys `type:id` durchgehend (inkl. Regression-Test).
+3. **Fehlende Spezialtokens (Haupt-Root-Cause):** llama.rn tokenisiert Embedding-Prompts ohne CLS/SEP (`loadPrompt` nutzt `add_bos` nur bei Vocab-Flag), die Referenz (llama.cpp-Server) wrapped als `<s>…</s>` — kurze Queries landeten dadurch in einem verzerrten Raum nahe dem Kurz-Konzept-Cluster. Fix: `ModelSpec.embedSpecialTokens` = `<s>…</s>`, angewendet in `LlamaCppEngine.embed` (token-level verifiziert: `[0, 15152, 190502, 2]` identisch zur Referenz).
+4. **Konzept-Ein-Wort-Vektoren:** nackte Anzeigenamen („Japan") matchten fast jede kurze Query. Fix: `ownerText(concept)` bettet den verlinkten Notiz-Text ein (`concepts.note_id`).
+5. **Restrisiko llama.rn-Version:** selbst mit identischen Tokens weichen Geräte-Vektoren numerisch von der aktuellen Host-llama.cpp ab (cos 0,77 kurz / 0,90 lang — vermutlich token_type/Positions-Behandlung im älteren Snapshot). Der Geräte-Raum ist aber selbstkonsistent; mit FTS gleichgewichtet (Gewicht 2 statt 1) trägt der Keyword-Kanal semantisch schwache Queries.
+6. **Verifikations-Falle Fast Refresh:** Code-Änderungen an Nicht-Komponenten-Modulen wurden mehrfach nicht übernommen — geräte-seitige Verifikation grundsätzlich nach force-stop + sauberem Neustart, nie gegen den Fast-Refresh-Zustand.
+
+**Offen aus Phase 9:** Filter Kanal/Zeitraum/Sehquote im Suche-Screen (Scope-Rest, Chips für Typ vorhanden); Embedding-Format-Änderungen erfordern neue Modell-ID (Cache-Key der `embeddings`-Tabelle).
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -271,9 +293,8 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
 10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
 
-## Nächste Schritte (Phase 9 — Semantische Suche, M8)
+## Nächste Schritte (Phase 10 — Subscription-Hygiene, M9)
 
-1. Embedding-Backend-Entscheidung per Benchmark (llama.rn-Embedding vs. transformers.js, multilingual-e5-small); `LLMEngine.embed` implementieren; `embeddings`-Tabelle + kNN (sqlite-vec vs. JS-Index, messen).
-2. Index-Job (idle, batch) über Chunks/Notizen/Konzepte/Analysen; FTS5 als Hybrid/Fallback über `transcript_chunks.text` + `notes.body_md`.
-3. Suche-Screen (DESIGN 5.9): Hybrid-Suche, Typ-Icons (Video/Notiz/Konzept), Filter (Kanal, Zeitraum, Sehquote), Treffer → Detail mit Zeitstempel-Sprung.
-4. **Exit:** Suche nach „Kaiju" findet Video + Konzept mit Sprung; Hybrid > reine FTS; Index vollständig in < 5 min (Referenzbestand).
+1. Scope gemäß `docs/ROADMAP.md` Phase 10: Kanal-Übersicht mit Kosten-/Aktivitäts-Signalen, „zuletzt gesehen"-Sortierung, Unsubscribe-Deep-Links (YouTube-App/Browser), Watchtime-pro-Kanal-Statistik aus `watch_events`.
+2. Konzept-Dedup kann jetzt auf die `embeddings`-Tabelle aufsetzen (Clustering statt reiner String-Ähnlichkeit) — bei Gelegenheit als Golden-Set-Gate nachrüsten.
+3. Danach Phase 10.5 (Pro-Tier: Firebase E2E-Sync + Gemini Cloud-Analyse Opt-in, RevenueCat) per ADR.

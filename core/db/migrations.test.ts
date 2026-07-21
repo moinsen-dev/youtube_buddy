@@ -63,6 +63,7 @@ const MIGRATION_IDS = [
   '0006_m6_knowledge',
   '0007_m11_knowledge_base',
   '0008_m7_travel',
+  '0009_m8_embeddings',
 ];
 
 describe('core/db migration runner', () => {
@@ -113,6 +114,11 @@ describe('core/db migration runner', () => {
     expect(
       db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS trip_places')),
     ).toBe(true);
+    expect(
+      db.executedSql.some((sql) => sql.startsWith('CREATE TABLE IF NOT EXISTS embeddings')),
+    ).toBe(true);
+    expect(db.executedSql.some((sql) => sql.includes('chunks_fts USING fts5'))).toBe(true);
+    expect(db.executedSql.some((sql) => sql.includes('notes_fts USING fts5'))).toBe(true);
     expect(
       db.executedSql.some((sql) =>
         sql.startsWith('CREATE INDEX IF NOT EXISTS idx_analyses_video_kind'),

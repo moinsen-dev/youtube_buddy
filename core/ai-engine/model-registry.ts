@@ -6,7 +6,6 @@ import type { ModelSpec } from './types';
  */
 
 const GB = 1024 ** 3;
-const MB = 1024 ** 2;
 
 export const MODEL_REGISTRY: ModelSpec[] = [
   {
@@ -41,12 +40,21 @@ export const MODEL_REGISTRY: ModelSpec[] = [
   },
 ];
 
-export const EMBEDDING_MODEL_CANDIDATE = {
-  id: 'multilingual-e5-small-q4',
-  name: 'Multilingual E5 Small (Q4)',
-  sizeBytes: Math.round(120 * MB),
-  note: 'Embedding (M8, Phase 9)',
-} as const;
+export const EMBEDDING_MODEL_SPEC: ModelSpec = {
+  id: 'paraphrase-multilingual-minilm-q4',
+  name: 'Paraphrase Multilingual MiniLM (Q4)',
+  url: 'https://huggingface.co/mykor/paraphrase-multilingual-MiniLM-L12-v2.gguf/resolve/main/paraphrase-multilingual-MiniLM-L12-118M-v2-Q4_K_M.gguf',
+  sizeBytes: 124835104,
+  sha256: '',
+  contextLength: 512,
+  minRamBytes: Math.round(0.5 * GB),
+  embedSpecialTokens: { prefix: '<s>', suffix: '</s>' },
+  note:
+    'Embedding (M8), 384-dim multilingual. Replaces multilingual-e5-small: ' +
+    'e5 is XLM-RoBERTa-based, which the bundled llama.cpp cannot map ' +
+    '(degenerate constant vectors — verified in phase 9). MiniLM is plain ' +
+    'BERT architecture and fully supported.',
+};
 
 /** Registry lookup with a helpful error. */
 export function getModelSpec(id: string): ModelSpec {

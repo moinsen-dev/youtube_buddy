@@ -1,6 +1,5 @@
-import { t } from '@/core/i18n/strings';
-import { DummyScreen } from '@/features/shell/dummy-screen';
+import { SearchScreen } from '@/features/search/search-screen';
 
-export default function SearchScreen() {
-  return <DummyScreen title={t().tabs.search} />;
+export default function SearchTab() {
+  return <SearchScreen />;
 }

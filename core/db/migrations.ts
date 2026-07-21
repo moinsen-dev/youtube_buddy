@@ -89,6 +89,15 @@ export const migrations: Migration[] = [
       'CREATE INDEX IF NOT EXISTS idx_trip_places_trip ON trip_places (trip_id, position)',
     ],
   },
+  {
+    id: '0009_m8_embeddings',
+    statements: [
+      'CREATE TABLE IF NOT EXISTS embeddings (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_type TEXT NOT NULL, owner_id INTEGER NOT NULL, vector BLOB NOT NULL, model TEXT NOT NULL, created_at INTEGER NOT NULL, UNIQUE(owner_type, owner_id, model))',
+      'CREATE INDEX IF NOT EXISTS idx_embeddings_owner ON embeddings (owner_type, owner_id)',
+      'CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(text)',
+      'CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(title, body_md)',
+    ],
+  },
 ];
 
 /**

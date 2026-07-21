@@ -11,7 +11,7 @@ Aufwandsklassen (grob, 1 Dev): **S** < 1 Woche · **M** 1–2 Wochen · **L** 2�
 ## Phase 0 — Fundament *(S)*
 **Ziel:** Leeres Repo → lauffähige Expo-App mit Shell, Theme und DB.
 - **Scope:** Expo + TypeScript strict + Expo Router init; Theme aus DESIGN.md §2 als `core/theme` (Tokens, Dark-First, Light-Variante); responsive Shell (Bottom Tabs < 600, Rail 600–1024, Sidebar > 1024) mit Dummy-Screens für die 5 Hauptbereiche (Home, Bibliothek, Suche, Wissen, Mehr); expo-sqlite + Drizzle Setup inkl. Migration-Runner; ESLint/Prettier/husky; Jest-Grundsetup.
-- **Abhängigkeiten:** — 
+- **Abhängigkeiten:** —
 - **Exit-Kriterien:** App startet auf iOS-Simulator, Android-Emulator und Web (`npx expo start`); Navigation zwischen 5 Dummy-Tabs; `npm run lint && npm test` grün; Migration legt leeres Schema an.
 
 ## Phase 1 — Auth & YouTube-Read (M1) *(M)*
@@ -68,7 +68,7 @@ Aufwandsklassen (grob, 1 Dev): **S** < 1 Woche · **M** 1–2 Wochen · **L** 2�
 
 ## Phase 9 — Semantische Suche (M8) *(M)*
 **Ziel:** Videos, Notizen und Konzepte in einfachen Worten wiederfinden.
-- **Scope:** Embedding-Modell (multilingual-e5-small) in `LLMEngine.embed` (nativ via llama.rn-Embedding oder transformers.js — Entscheidung per Benchmark); Index-Job (idle, batch) über Chunks/Notizen/Konzepte/Analysen; `embeddings`-Tabelle + kNN-Suche (sqlite-vec vs. JS-Index, messen); Suche-Screen (DESIGN 5.9) mit Hybrid aus Vektor + FTS5, Typ-Icons (Video/Notiz/Konzept), Filtern (Kanal, Zeitraum, Sehquote); Treffer → Video-Detail bzw. Notiz-Detail mit Zeitstempel-Sprung.
+- **Scope:** Embedding-Modell (~~multilingual-e5-small~~ → paraphrase-multilingual-MiniLM-L12-v2, BERT-Arch — XLM-RoBERTa kann das gebundelte llama.cpp nicht) in `LLMEngine.embed` (nativ via llama.rn-Embedding); Index-Job (idle, batch) über Chunks/Notizen/Konzepte/Analysen; `embeddings`-Tabelle + JS-kNN (kein sqlite-vec — trivial bei unseren Korpusgrößen); Suche-Screen (DESIGN 5.9) mit Hybrid aus Vektor + FTS5 (RRF, gleichgewichtet), Typ-Icons (Video/Notiz/Konzept), Filtern (Typ); Treffer → Video-Detail bzw. Notiz-Detail mit Zeitstempel-Sprung.
 - **Abhängigkeiten:** Phasen 3 + 4; ideal nach 7 (Notiz-/Konzept-Korpus).
 - **Exit-Kriterien:** Golden-Queries (10 natürlichsprachliche Fragen über Test-Korpus) finden das richtige Video/die richtige Notiz in Top-3 in ≥ 8/10 Fällen; Suche < 300 ms bei 50k Chunks.
 
@@ -114,8 +114,7 @@ Aufwandsklassen (grob, 1 Dev): **S** < 1 Woche · **M** 1–2 Wochen · **L** 2�
 | 9 | Semantische Suche | M8 | M | 3, 4 (7) |
 | 10 | Subscription-Hygiene | M9 | S | 1, 2 |
 | 11 | Web-KI & Polish | M10 | M | 4–9 |
-| 12 | Apple TV | M10 | L | 5–8, 11 |
-
+| 12 | Apple TV | M10 | L | 5–8, 11
 **Parallelisierbar:** 8 und 9 können parallel laufen (verschiedene Features, gleiche Engine). 10 kann jederzeit nach 2. Reihenfolge 6→7→8→9 ist die empfohlene Default-Sequenz (Wissen vor Zusatzmodulen).
 
 **Meilensteine:**

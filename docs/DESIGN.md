@@ -347,7 +347,7 @@ ASCII-Wireframes in Phone-Breite (375 pt). Für Tablet/Web gilt: linke Spalte Li
 │ KI-MODELLE (lokal)          │
 │ ● Qwen3-4B Q4  2,3 GB ✓ inst│
 │ ○ Gemma-3-4B   2,5 GB  Laden│
-│ ○ E5-small     0,1 GB  Empf.│
+│ ○ MiniLM-L12   0,1 GB  Empf.│
 │ Freier Speicher: 41 GB      │
 │                             │
 │ DATEN (lokal)               │

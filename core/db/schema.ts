@@ -6,6 +6,7 @@ import {
   text,
   index,
   unique,
+  blob,
 } from 'drizzle-orm/sqlite-core';
 
 /**
@@ -291,4 +292,25 @@ export const tripPlaces = sqliteTable(
     geocodeStatus: text('geocode_status').$type<GeocodeStatus>().notNull().default('pending'),
   },
   (table) => [index('idx_trip_places_trip').on(table.tripId, table.position)],
+);
+
+// --- M8: Semantische Suche (ARCHITECTURE.md §4) ---
+
+export type EmbeddingOwnerType = 'transcript_chunk' | 'note' | 'concept' | 'analysis';
+
+export const embeddings = sqliteTable(
+  'embeddings',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    ownerType: text('owner_type').$type<EmbeddingOwnerType>().notNull(),
+    ownerId: integer('owner_id').notNull(),
+    /** Float32Array as raw bytes (384 dims, paraphrase-multilingual-MiniLM-L12-v2). */
+    vector: blob('vector').notNull(),
+    model: text('model').notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (table) => [
+    index('idx_embeddings_owner').on(table.ownerType, table.ownerId),
+    unique('uq_embeddings_owner_model').on(table.ownerType, table.ownerId, table.model),
+  ],
 );

@@ -104,10 +104,12 @@ Backends: `LlamaCppEngine` (iOS/Android/TV-theoretisch), `WebLLMEngine` (Web, We
 | Zweck | Kandidaten (v1) | Größe (Q4) | Mindest-RAM |
 |---|---|---|---|
 | Chat/Analyse | **Qwen3-4B-Instruct** (Default), Alternativen: Gemma-3-4B-it, Llama-3.2-3B | 2,3–2,5 GB | 6 GB (4 GB → 1–2B-Modell) |
-| Embedding (M8) | **multilingual-e5-small** (384-dim) | ~120 MB | — |
+| Embedding (M8) | **paraphrase-multilingual-MiniLM-L12-v2** (384-dim, 50+ Sprachen) | ~120 MB | — |
 | Transkription (Could) | whisper tiny/base GGML | 75–150 MB | — |
 
 Registry = JSON-Manifest (Name, HF-URL, SHA-256, Größe, Kontextlänge, Mindest-RAM, empfohlen-ab-Gerät). Download via `expo-file-system` mit Resume, Verifizierung per Hash, Verwaltung im Einstellungen-Screen (DESIGN 5.11).
+
+**Embedding-Entscheidung (Phase 9, verifiziert):** multilingual-e5-small entfällt — es ist XLM-RoBERTa-basiert, und das in llama.rn gebundelte llama.cpp kennt diese Architektur nicht (Vektoren degenerieren zu Konstanten). MiniLM-L12 ist plain-BERT und läuft korrekt. Zwei Fallstricke sind im Code verankert: llama.rn tokenisiert Embedding-Prompts ohne Spezialtokens — `ModelSpec.embedSpecialTokens` wrapped Inputs als `<s>…</s>` (sonst landen kurze Queries in einem verzerrten Raum); und Konzepte werden mit ihrem Notiz-Text statt nur dem Anzeigenamen eingebettet (Ein-Wort-Vektoren clustern sonst gegen jede kurze Query).
 
 ### 3.3 Prompt-Templates & strukturierte Outputs
 

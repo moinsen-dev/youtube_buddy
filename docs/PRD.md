@@ -107,7 +107,7 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 | Modell-Management | M | Download (GGUF via Hugging Face), Speicherplatz-Anzeige, Löschen, Versionierung; Empfehlung je nach Geräte-RAM |
 | Chat-Modell (3–4B) | M | z. B. Qwen3-4B / Gemma-3-4B / Llama-3.2-3B (quantisiert Q4); Auswahl im Architektur-Doc |
 | Prompt-Templates + JSON-Validierung | M | Strukturierte Outputs (zod-Schemas), Retry bei Parse-Fehler |
-| Embedding-Modell | S | Kleines Mehrsprachen-Modell (z. B. multilingual-e5-small / bge-small) für M8 |
+| Embedding-Modell | S | Kleines Mehrsprachen-Modell (paraphrase-multilingual-MiniLM-L12-v2; e5-small verworfen — XLM-RoBERTa läuft in llama.rn nicht korrekt) für M8 |
 | On-Device-Inferenz-UX | M | Fortschrittsanzeige, Abbruch, „läuft lokal — keine Daten verlassen das Gerät"-Hinweis |
 
 ### M5 — Video-Analyse
@@ -255,5 +255,5 @@ Legende: **M**ust (v1-Kern) · **S**hould (v1, nach Must) · **C**ould (v1.x / v
 1. **Takeout-Import** (historischer Verlauf): Aufwand mittel, Nutzen hoch für Persona A — als Could in Phase 10 eingeplant, Entscheidung nach erster Nutzung.
 2. ~~**Sync v2**~~ → **beschlossen (ADR §7.6, 2026-07-20):** E2E-Sync als Paid-Pro-Modul (Supabase), Umsetzung ab Phase 10.5.
 3. **Whisper-Fallback:** Abhängig davon, ob Audio-Beschaffung für Transkription sauber lösbar ist (ToS). Erst nach Phase 3 evaluieren.
-4. **Modell-Auswahl final:** Benchmark auf Zielgeräten in Phase 4 (Kandidaten: Qwen3-4B-Instruct, Gemma-3-4B-it, Llama-3.2-3B-Instruct, jeweils Q4_K_M GGUF; Embedding: multilingual-e5-small).
+4. **Modell-Auswahl final:** Benchmark auf Zielgeräten in Phase 4 (Kandidaten: Qwen3-4B-Instruct, Gemma-3-4B-it, Llama-3.2-3B-Instruct, jeweils Q4_K_M GGUF; Embedding: ~~multilingual-e5-small~~ → **paraphrase-multilingual-MiniLM-L12-v2**, entschieden in Phase 9).
 5. ~~**Monetarisierung**~~ → **beschlossen (ADR §7.6, 2026-07-20):** Paid Pro-Tier (E2E-Sync + Cloud-Analyse Opt-in) via RevenueCat; Free bleibt 100 % local-only.
