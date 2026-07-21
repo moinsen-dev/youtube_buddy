@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getEngine, peekEngine } from '@/core/ai-engine/engine-instance';
+import { peekEngine } from '@/core/ai-engine/engine-instance';
 import { MODEL_REGISTRY } from '@/core/ai-engine/model-registry';
 import type { ChaptersV1Output } from '@/core/ai-engine/prompts/chapters.v1';
 import type { SummarizeReduceV1Output } from '@/core/ai-engine/prompts/summarize-reduce.v1';
@@ -8,6 +8,7 @@ import type { TriageV1Output } from '@/core/ai-engine/prompts/triage.v1';
 import { getDb } from '@/core/db';
 import { listAnalyses, upsertAnalysis } from '@/core/db/repositories';
 import { defaultLocale } from '@/core/i18n/strings';
+import { resolveAnalysisEngine } from '@/features/pro/pro-engine';
 import { ensureTranscript } from '@/features/transcripts/ensure-transcript';
 import { extractConceptsForVideo } from '@/features/knowledge/concept-extraction';
 
@@ -64,21 +65,17 @@ export function useAnalysis(videoId: string) {
 
   const start = useCallback(
     async (meta: { title: string; durationSec: number }) => {
-      const loadedId = peekEngine()?.loadedModelId;
-      if (!loadedId) {
-        setState((current) => ({
-          ...current,
-          status: 'error',
-          error: 'Kein Modell geladen — erst im Mehr-Tab ein Modell laden.',
-        }));
-        return;
-      }
       const controller = new AbortController();
       setAbortController(controller);
       setState((current) => ({ ...current, status: 'running', progress: null, error: null }));
       try {
         const db = await getDb();
         if (!db) throw new Error('Keine lokale Datenbank (Web) — Analyse läuft nur nativ.');
+        const resolved = await resolveAnalysisEngine(db);
+        if ('error' in resolved) {
+          setState((current) => ({ ...current, status: 'error', error: resolved.error }));
+          return;
+        }
         const transcript = await ensureTranscript(db, videoId);
         if (transcript.status !== 'ok') {
           throw new Error(
@@ -87,9 +84,8 @@ export function useAnalysis(videoId: string) {
               : `Transkript-Fehler: ${transcript.message}`,
           );
         }
-        const engine = await getEngine();
         const result = await analyzeTranscript(
-          engine,
+          resolved.engine,
           {
             title: meta.title,
             durationSec: meta.durationSec,
@@ -100,8 +96,10 @@ export function useAnalysis(videoId: string) {
           controller.signal,
         );
         const now = Date.now();
-        const spec = MODEL_REGISTRY.find((entry) => entry.id === loadedId);
-        const model = spec?.id ?? loadedId;
+        const model = resolved.isCloud
+          ? resolved.modelLabel
+          : (MODEL_REGISTRY.find((entry) => entry.id === resolved.modelLabel)?.id ??
+            resolved.modelLabel);
         await upsertAnalysis(db, {
           videoId,
           kind: 'summary',
@@ -129,7 +127,7 @@ export function useAnalysis(videoId: string) {
         // Concept extraction follows the analysis (ARCHITECTURE §5.4) —
         // failures must not break the analysis flow.
         try {
-          await extractConceptsForVideo(engine, db, videoId);
+          await extractConceptsForVideo(resolved.engine, db, videoId);
         } catch (cause) {
           console.warn('[knowledge] concept extraction failed', cause);
         }
@@ -164,10 +162,27 @@ export function useAnalysis(videoId: string) {
     abortController?.abort();
   }, [abortController]);
 
-  const engineReady = peekEngine()?.loadedModelId != null;
-  const modelName = engineReady
-    ? (MODEL_REGISTRY.find((entry) => entry.id === peekEngine()!.loadedModelId)?.name ?? null)
-    : null;
+  // Cloud readiness needs an async session check (Pro opt-in, ADR §7.6).
+  const [cloudReady, setCloudReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const db = await getDb();
+      if (!db) return;
+      const resolved = await resolveAnalysisEngine(db);
+      if (!cancelled) setCloudReady(!('error' in resolved) && resolved.isCloud);
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  return { ...state, engineReady, modelName, start, abort };
+  const engineReady = cloudReady || peekEngine()?.loadedModelId != null;
+  const modelName = cloudReady
+    ? 'Gemini (Cloud)'
+    : engineReady
+      ? (MODEL_REGISTRY.find((entry) => entry.id === peekEngine()!.loadedModelId)?.name ?? null)
+      : null;
+
+  return { ...state, engineReady, modelName, isCloud: cloudReady, start, abort };
 }

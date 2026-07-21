@@ -310,12 +310,21 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Blocker / User-Aktionen (in dieser Reihenfolge):**
 
-1. **kimi-code neu starten** → firebase/revenuecat MCPs laden (OAuth-Flow für RevenueCat beim ersten Call).
-2. **Blaze-Upgrade** für `youtube-buddy-moinsen-dev` (Cloud Functions/Build brauchen Pay-as-you-go; exakte Fehlermeldung liegt vor: `cloudbuild.googleapis.com can't be enabled until the upgrade is complete`): https://console.firebase.google.com/project/youtube-buddy-moinsen-dev/usage/details — dann deploye ich die Function.
-3. **gcloud auth login** (Token abgelaufen) — für IAM/Billing-Checks + ggf. Auth-Provider-Aktivierung via API.
-4. **Google-Provider in Firebase Auth (dev) aktivieren** — per Firebase-MCP (falls verfügbar), Console-Klick oder Identity-Platform-API (nach 3).
+1. ~~**kimi-code neu starten**~~ ✅ (firebase-MCP aktiv; revenuecat-MCP lädt nicht — OAuth/Server-Start prüfen bei nächster Session).
+2. ~~**Blaze-Upgrade**~~ ✅ → `analyze` in europe-west3 deployed.
+3. **gcloud auth login** (Token abgelaufen) — für IAM/Billing-Checks + API-Aktivierungen per CLI.
+4. ~~**Google-Provider in Firebase Auth (dev) aktivieren**~~ ✅ (`firebase deploy --only auth`).
+5. ~~**Client-ID-Allowlist** (Cross-Projekt-Google-Identität)~~ ✅ — Web-Client-ID des YouTube-Projekts im Dev-Projekt allowlistet (Console-only, keine API).
+6. **Vertex AI API aktivieren** (Console-Klick oder `gcloud services enable aiplatform.googleapis.com --project youtube-buddy-moinsen-dev`) — letzter fehlender Schritt für den Gemini-Call; Fehlerbild live in der App verifiziert (`SERVICE_DISABLED`).
 
 **Offen für die Fortsetzung (nächste Session):** Pro-Sektion im Mehr-Tab (Sync aktivieren/beitreten/jetzt synchronisieren, Cloud-Opt-in-Toggle), Engine-Auswahl (CloudEngine hinter Entitlement), RevenueCat Dashboard (Projekt/App/Entitlement `pro` via MCP, Test-Store) + `react-native-purchases` (nativer Rebuild), Server-seitige Entitlement-Prüfung (ADR-Detail: RC-Webhook → Custom Claims), Golden-Set-Benchmark Gemini → Modell-Pinning, E2E-Verifikation zwei Geräte (Emulator + zweite Instanz), Takeout bleibt Could.
+
+**Verifiziert auf dem Emulator (2026-07-21):**
+
+- **Firebase-Connect:** Cross-Projekt-Google-Identität (YouTube-Projekt-Token → Firebase-Dev-Projekt) funktioniert nach Allowlist — `Firebase verbunden (ww3QeMHF…)`, uid `ww3QeMHFidVDOO5KckMHt3MEztT2`.
+- **E2E-Sync Push Ende-zu-Ende:** Sync aktiviert → Recovery-Code einmalig angezeigt (Wrapped Master Key liegt als `entities_meta/master_key` in Firestore); „Jetzt synchronisieren" → **64 Entities hochgeladen**, Pull überspringt korrekt lokal-neuere (LWW). **Firestore-Nachweis via MCP: alle 7 `entities_*`-Collections enthalten ausschließlich `ciphertext` + `updated_at`** — Server ist blind, wie im ADR gefordert. Dokument-IDs = `sync_id` (keine lokalen Autoincrement-Kollisionen).
+- **Cloud-Analyse:** Kette App → CloudEngine → Function (europe-west3) → Vertex läuft; aktuell letzter offener Schritt: `aiplatform.googleapis.com` im Dev-Projekt aktivieren (Fehler `SERVICE_DISABLED` live in der App gesehen). Label kennzeichnet den Pfad korrekt („Analysieren (Cloud)"), `analyses.model` = `gemini-2.5-flash (cloud)`.
+- **Gefundene Bugs:** `no PRNG` (tweetnacl ohne Hermes-RNG) → Zufall via expo-crypto; `engineReady` prüfte nur das lokale Modell → cloud-aware; `@google/genai` braucht explizites `project`/`location` (GCLOUD_PROJECT).
 
 **Bewusste v1-Grenzen (im Code dokumentiert):** keine Delete-Tombstones (Löschen bleibt lokal), `concepts.note_id` wird nicht synchronisiert, Transkripte/Embeddings/Modelle bleiben lokal (ADR), Web = read-only für Pro.
 

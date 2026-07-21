@@ -10,6 +10,7 @@ import { useTheme } from '@/core/theme';
 import { useAuth } from '@/features/auth/auth-context';
 import { ModelSection } from '@/features/library/model-section';
 import { QuotaMeter } from '@/features/library/quota-meter';
+import { ProSection } from '@/features/pro/pro-section';
 
 /**
  * "Mehr" screen: account, quota, app info. Grows into settings (DESIGN 5.11)
@@ -85,6 +86,8 @@ export function MoreScreen() {
       </View>
 
       <ModelSection />
+
+      <ProSection />
 
       <Pressable
         onPress={() => router.push('/hygiene')}

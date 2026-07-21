@@ -78,7 +78,9 @@ export function AnalysisSection({
             ]}
           >
             <Text style={[theme.typography.bodyStrong, { color: theme.colors.accentOnPrimary }]}>
-              {analysis.triage ? 'Vollständig analysieren (lokal)' : 'Analysieren (lokal)'}
+              {analysis.triage
+                ? `Vollständig analysieren (${analysis.isCloud ? 'Cloud' : 'lokal'})`
+                : `Analysieren (${analysis.isCloud ? 'Cloud' : 'lokal'})`}
             </Text>
           </Pressable>
           {ctaHint && (

@@ -1,4 +1,5 @@
-import { randomBytes, secretbox } from 'tweetnacl';
+import { getRandomBytes } from 'expo-crypto';
+import { secretbox } from 'tweetnacl';
 import { scrypt } from 'scrypt-js';
 
 /**
@@ -8,8 +9,8 @@ import { scrypt } from 'scrypt-js';
  * (XSalsa20-Poly1305 via tweetnacl secretbox — authenticated encryption).
  * The master key itself is wrapped with a key derived from the recovery
  * code (scrypt) and only the wrapped blob leaves the device — a second
- * device unwraps it with the same code. Pure-JS deps only: no native
- * module, no network.
+ * device unwraps it with the same code. Randomness comes from expo-crypto
+ * (tweetnacl's own PRNG does not exist in Hermes — 'no PRNG').
  */
 
 export const MASTER_KEY_BYTES = 32;
@@ -20,12 +21,12 @@ const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, dkLen: 32 };
 
 /** Random 256-bit master key. */
 export function generateMasterKey(): Uint8Array {
-  return randomBytes(MASTER_KEY_BYTES);
+  return getRandomBytes(MASTER_KEY_BYTES);
 }
 
 /** Human-readable recovery code, e.g. 'XXXX-XXXX-…' (24 chars in 6 groups). */
 export function generateRecoveryCode(): string {
-  const bytes = randomBytes(RECOVERY_CODE_LENGTH);
+  const bytes = getRandomBytes(RECOVERY_CODE_LENGTH);
   const chars = Array.from(bytes, (b) => RECOVERY_CODE_ALPHABET[b % RECOVERY_CODE_ALPHABET.length]);
   return chars.join('');
 }
@@ -54,8 +55,8 @@ export async function wrapMasterKey(
   masterKey: Uint8Array,
   recoveryCode: string,
 ): Promise<Uint8Array> {
-  const salt = randomBytes(16);
-  const nonce = randomBytes(secretbox.nonceLength);
+  const salt = getRandomBytes(16);
+  const nonce = getRandomBytes(secretbox.nonceLength);
   const wrapKey = await deriveWrapKey(recoveryCode, salt);
   const box = secretbox(masterKey, nonce, wrapKey);
   const out = new Uint8Array(salt.length + nonce.length + box.length);
@@ -83,7 +84,7 @@ export async function unwrapMasterKey(
 
 /** Encrypts a JSON payload: output = nonce ‖ box, base64 for storage. */
 export function encryptPayload(masterKey: Uint8Array, payload: unknown): string {
-  const nonce = randomBytes(secretbox.nonceLength);
+  const nonce = getRandomBytes(secretbox.nonceLength);
   const message = new TextEncoder().encode(JSON.stringify(payload));
   const box = secretbox(message, nonce, masterKey);
   const out = new Uint8Array(nonce.length + box.length);

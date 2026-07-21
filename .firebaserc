@@ -3,5 +3,7 @@
     "default": "youtube-buddy-moinsen-dev",
     "dev": "youtube-buddy-moinsen-dev",
     "production": "youtube-buddy-moinsen"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

@@ -61,7 +61,13 @@ export const analyze = onRequest(
 
     const started = Date.now();
     try {
-      const ai = new GoogleGenAI({ vertexai: true });
+      // ADC via the function's service account; project/location must be
+      // explicit for @google/genai (GCLOUD_PROJECT is set by Cloud Run).
+      const ai = new GoogleGenAI({
+        vertexai: true,
+        project: process.env.GCLOUD_PROJECT,
+        location: REGION,
+      });
       const result = await ai.models.generateContent({
         model: body.model ?? DEFAULT_MODEL,
         contents: body.prompt,
