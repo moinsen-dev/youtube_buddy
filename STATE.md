@@ -315,7 +315,7 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 3. **gcloud auth login** (Token abgelaufen) — für IAM/Billing-Checks + API-Aktivierungen per CLI.
 4. ~~**Google-Provider in Firebase Auth (dev) aktivieren**~~ ✅ (`firebase deploy --only auth`).
 5. ~~**Client-ID-Allowlist** (Cross-Projekt-Google-Identität)~~ ✅ — Web-Client-ID des YouTube-Projekts im Dev-Projekt allowlistet (Console-only, keine API).
-6. **Vertex AI API aktivieren** (Console-Klick oder `gcloud services enable aiplatform.googleapis.com --project youtube-buddy-moinsen-dev`) — letzter fehlender Schritt für den Gemini-Call; Fehlerbild live in der App verifiziert (`SERVICE_DISABLED`).
+6. ~~**Vertex AI API aktivieren**~~ ✅ — danach **erster echter Gemini-Call verifiziert**: Cloud-Analyse des El-Niño-Videos via Emulator → `analyses` mit `summary`/`chapters`/`triage` je `gemini-2.5-flash (cloud)` + deutscher Zusammenfassung (Screenshot `.verification/phase105_cloud_analysis.png`); Function-Logs zeigen die Calls.
 
 **Offen für die Fortsetzung (nächste Session):** Pro-Sektion im Mehr-Tab (Sync aktivieren/beitreten/jetzt synchronisieren, Cloud-Opt-in-Toggle), Engine-Auswahl (CloudEngine hinter Entitlement), RevenueCat Dashboard (Projekt/App/Entitlement `pro` via MCP, Test-Store) + `react-native-purchases` (nativer Rebuild), Server-seitige Entitlement-Prüfung (ADR-Detail: RC-Webhook → Custom Claims), Golden-Set-Benchmark Gemini → Modell-Pinning, E2E-Verifikation zwei Geräte (Emulator + zweite Instanz), Takeout bleibt Could.
 
@@ -323,7 +323,7 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 - **Firebase-Connect:** Cross-Projekt-Google-Identität (YouTube-Projekt-Token → Firebase-Dev-Projekt) funktioniert nach Allowlist — `Firebase verbunden (ww3QeMHF…)`, uid `ww3QeMHFidVDOO5KckMHt3MEztT2`.
 - **E2E-Sync Push Ende-zu-Ende:** Sync aktiviert → Recovery-Code einmalig angezeigt (Wrapped Master Key liegt als `entities_meta/master_key` in Firestore); „Jetzt synchronisieren" → **64 Entities hochgeladen**, Pull überspringt korrekt lokal-neuere (LWW). **Firestore-Nachweis via MCP: alle 7 `entities_*`-Collections enthalten ausschließlich `ciphertext` + `updated_at`** — Server ist blind, wie im ADR gefordert. Dokument-IDs = `sync_id` (keine lokalen Autoincrement-Kollisionen).
-- **Cloud-Analyse:** Kette App → CloudEngine → Function (europe-west3) → Vertex läuft; aktuell letzter offener Schritt: `aiplatform.googleapis.com` im Dev-Projekt aktivieren (Fehler `SERVICE_DISABLED` live in der App gesehen). Label kennzeichnet den Pfad korrekt („Analysieren (Cloud)"), `analyses.model` = `gemini-2.5-flash (cloud)`.
+- **Cloud-Analyse:** **Ende-zu-Ende verifiziert** — Emulator → CloudEngine → Function (europe-west3) → Vertex (`gemini-2.5-flash`) → persistiert mit Audit-Label `gemini-2.5-flash (cloud)`; Button/Labels kennzeichnen Cloud vs. lokal, AnalysisSheet sagt bei Cloud ehrlich „Transkript wird an die EU-Cloud gesendet" (statt On-Device-Badge).
 - **Gefundene Bugs:** `no PRNG` (tweetnacl ohne Hermes-RNG) → Zufall via expo-crypto; `engineReady` prüfte nur das lokale Modell → cloud-aware; `@google/genai` braucht explizites `project`/`location` (GCLOUD_PROJECT).
 
 **Bewusste v1-Grenzen (im Code dokumentiert):** keine Delete-Tombstones (Löschen bleibt lokal), `concepts.note_id` wird nicht synchronisiert, Transkripte/Embeddings/Modelle bleiben lokal (ADR), Web = read-only für Pro.

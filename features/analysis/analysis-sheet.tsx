@@ -20,11 +20,14 @@ export function AnalysisSheet({
   visible,
   progress,
   modelName,
+  isCloud = false,
   onAbort,
 }: {
   visible: boolean;
   progress: AnalysisProgress | null;
   modelName: string | null;
+  /** Cloud run (ADR PRD §7.6): the badge must not claim on-device privacy. */
+  isCloud?: boolean;
   onAbort: () => void;
 }) {
   const theme = useTheme();
@@ -70,9 +73,16 @@ export function AnalysisSheet({
           </Text>
 
           <View style={styles.badgeRow}>
-            <View style={[styles.dot, { backgroundColor: theme.colors.success }]} />
+            <View
+              style={[
+                styles.dot,
+                { backgroundColor: isCloud ? theme.colors.accentPrimary : theme.colors.success },
+              ]}
+            />
             <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
-              On-Device — keine Daten verlassen das Gerät
+              {isCloud
+                ? 'Cloud (Opt-in) — das Transkript wird zur Analyse an die EU-Cloud gesendet'
+                : 'On-Device — keine Daten verlassen das Gerät'}
               {modelName ? ` · Modell: ${modelName}` : ''}
             </Text>
           </View>

@@ -134,6 +134,7 @@ export function AnalysisSection({
         visible={analysis.status === 'running'}
         progress={analysis.progress}
         modelName={analysis.modelName}
+        isCloud={analysis.isCloud}
         onAbort={analysis.abort}
       />
     </View>
