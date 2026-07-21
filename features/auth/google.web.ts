@@ -1,4 +1,4 @@
-import { getGoogleOAuthConfig, GOOGLE_SCOPES } from './config';
+import { getGoogleOAuthConfig, GOOGLE_SCOPES, YOUTUBE_FORCE_SSL_SCOPE } from './config';
 
 /**
  * Web Google sign-in via Google Identity Services token client
@@ -56,7 +56,10 @@ function loadGis(): Promise<void> {
   return gisLoadPromise;
 }
 
-async function requestToken(prompt: '' | 'consent'): Promise<GoogleTokens | null> {
+async function requestToken(
+  prompt: '' | 'consent',
+  extraScopes: string[] = [],
+): Promise<GoogleTokens | null> {
   await loadGis();
   const { webClientId } = getGoogleOAuthConfig();
   const oauth2 = window.google?.accounts.oauth2;
@@ -65,7 +68,7 @@ async function requestToken(prompt: '' | 'consent'): Promise<GoogleTokens | null
   return new Promise((resolve, reject) => {
     const client = oauth2.initTokenClient({
       client_id: webClientId,
-      scope: GOOGLE_SCOPES.join(' '),
+      scope: [...GOOGLE_SCOPES, ...extraScopes].join(' '),
       callback: (response) => {
         if (response.error || !response.access_token) {
           resolve(null);
@@ -102,4 +105,12 @@ export async function googleSignOut(accessToken?: string): Promise<void> {
       window.google!.accounts.oauth2.revoke(accessToken, resolve),
     );
   }
+}
+
+/**
+ * Incremental scope upgrade (M9): consent screen for youtube.force-ssl only
+ * (already-granted scopes carry over in GIS).
+ */
+export async function googleRequestForceSsl(): Promise<GoogleTokens | null> {
+  return requestToken('consent', [YOUTUBE_FORCE_SSL_SCOPE]);
 }

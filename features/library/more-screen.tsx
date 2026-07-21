@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import { QuotaMeter } from '@/features/library/quota-meter';
  */
 export function MoreScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const { email, signOut } = useAuth();
   const insets = useSafeAreaInsets();
   const version = Constants.expoConfig?.version ?? '—';
@@ -83,6 +85,29 @@ export function MoreScreen() {
       </View>
 
       <ModelSection />
+
+      <Pressable
+        onPress={() => router.push('/hygiene')}
+        accessibilityRole="button"
+        accessibilityLabel="Abo-Hygiene öffnen"
+        style={({ pressed }) => [
+          styles.card,
+          {
+            backgroundColor: pressed ? theme.colors.bgOverlay : theme.colors.bgElevated,
+            borderColor: theme.colors.lineSubtle,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.lg,
+            minHeight: theme.touchTarget.default,
+          },
+        ]}
+      >
+        <Text style={[theme.typography.title3, { color: theme.colors.textPrimary }]}>
+          Abo-Hygiene
+        </Text>
+        <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          Inaktive Abos erkennen und entabonnieren (Vorschläge nach Sehverhalten)
+        </Text>
+      </Pressable>
 
       <View
         style={[

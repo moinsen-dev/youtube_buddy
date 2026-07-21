@@ -64,6 +64,7 @@ const MIGRATION_IDS = [
   '0007_m11_knowledge_base',
   '0008_m7_travel',
   '0009_m8_embeddings',
+  '0010_m9_hygiene',
 ];
 
 describe('core/db migration runner', () => {
@@ -119,6 +120,11 @@ describe('core/db migration runner', () => {
     ).toBe(true);
     expect(db.executedSql.some((sql) => sql.includes('chunks_fts USING fts5'))).toBe(true);
     expect(db.executedSql.some((sql) => sql.includes('notes_fts USING fts5'))).toBe(true);
+    expect(
+      db.executedSql.some((sql) =>
+        sql.includes('ALTER TABLE subscriptions ADD COLUMN youtube_sub_id'),
+      ),
+    ).toBe(true);
     expect(
       db.executedSql.some((sql) =>
         sql.startsWith('CREATE INDEX IF NOT EXISTS idx_analyses_video_kind'),

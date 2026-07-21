@@ -1,6 +1,6 @@
 import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
 
-import { getGoogleOAuthConfig, GOOGLE_SCOPES } from './config';
+import { getGoogleOAuthConfig, GOOGLE_SCOPES, YOUTUBE_FORCE_SSL_SCOPE } from './config';
 
 /**
  * Native Google sign-in (iOS/Android) via @react-native-google-signin
@@ -67,4 +67,30 @@ export async function googleSignOut(_accessToken?: string): Promise<void> {
   } catch {
     // already signed out
   }
+}
+
+/**
+ * Incremental scope upgrade (M9): re-configures with youtube.force-ssl and
+ * runs an interactive sign-in — Google shows consent for the new scope only.
+ * Afterwards every token (also from silent refresh) carries the scope.
+ */
+export async function googleRequestForceSsl(): Promise<GoogleTokens | null> {
+  const config = getGoogleOAuthConfig();
+  GoogleSignin.configure({
+    webClientId: config.webClientId,
+    iosClientId: config.iosClientId || undefined,
+    scopes: [...GOOGLE_SCOPES, YOUTUBE_FORCE_SSL_SCOPE],
+  });
+  configured = true;
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  const response = await GoogleSignin.signIn();
+  if (!isSuccessResponse(response)) {
+    return null; // user cancelled
+  }
+  const tokens = await GoogleSignin.getTokens();
+  return {
+    accessToken: tokens.accessToken,
+    expiresAt: Date.now() + 3500 * 1000,
+    email: response.data.user.email ?? null,
+  };
 }

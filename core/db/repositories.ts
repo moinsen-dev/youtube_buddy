@@ -1,4 +1,4 @@
-import { eq, isNull, notInArray, desc, and, inArray, lte } from 'drizzle-orm';
+import { eq, isNull, notInArray, desc, and, inArray, lte, sql } from 'drizzle-orm';
 import type { ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 
 import {
@@ -70,6 +70,8 @@ export interface SubscriptionRow {
   channelId: string;
   subscribedAt: number;
   deletedAt: number | null;
+  /** YouTube subscription resource id (subscriptions.delete target, M9). */
+  youtubeSubId?: string | null;
 }
 
 export async function upsertSubscriptions(db: Db, rows: SubscriptionRow[]): Promise<void> {
@@ -114,6 +116,77 @@ export async function listActiveSubscriptions(db: Db): Promise<SubscriptionListI
     .where(isNull(subscriptions.deletedAt))
     .orderBy(channels.title);
   return rows;
+}
+
+// --- subscription hygiene (M9) ---
+
+export interface ChannelWatchStats {
+  channelId: string;
+  title: string;
+  thumbnailUrl: string | null;
+  subscribedAt: number;
+  /** Distinct videos of this channel with at least one watch session. */
+  watchedVideos: number;
+  /** Average percent_watched over all sessions (null = never watched). */
+  avgPercentWatched: number | null;
+  /** Last watch session start (epoch ms, null = never watched). */
+  lastWatchedAt: number | null;
+}
+
+/**
+ * Sehverhalten-Report (M9, ROADMAP phase 10): subscriptions × watch_sessions
+ * joined via videos. Covers only locally tracked videos (M2) — by design.
+ */
+export async function listChannelWatchStats(db: Db): Promise<ChannelWatchStats[]> {
+  const rows = await db.all<{
+    channel_id: string;
+    title: string;
+    thumbnail_url: string | null;
+    subscribed_at: number;
+    watched_videos: number;
+    avg_percent: number | null;
+    last_watched_at: number | null;
+  }>(
+    sql`SELECT c.id AS channel_id, c.title, c.thumbnail_url, s.subscribed_at,
+               COUNT(DISTINCT ws.video_id) AS watched_videos,
+               AVG(ws.percent_watched) AS avg_percent,
+               MAX(ws.started_at) AS last_watched_at
+        FROM subscriptions s
+        JOIN channels c ON c.id = s.channel_id
+        LEFT JOIN videos v ON v.channel_id = c.id
+        LEFT JOIN watch_sessions ws ON ws.video_id = v.id
+        WHERE s.deleted_at IS NULL
+        GROUP BY c.id
+        ORDER BY c.title`,
+  );
+  return rows.map((row) => ({
+    channelId: row.channel_id,
+    title: row.title,
+    thumbnailUrl: row.thumbnail_url,
+    subscribedAt: row.subscribed_at,
+    watchedVideos: row.watched_videos,
+    avgPercentWatched: row.avg_percent,
+    lastWatchedAt: row.last_watched_at,
+  }));
+}
+
+/** YouTube subscription resource id for one channel (null if not synced yet). */
+export async function getSubscriptionSubId(db: Db, channelId: string): Promise<string | null> {
+  const rows = await db
+    .select({ youtubeSubId: subscriptions.youtubeSubId })
+    .from(subscriptions)
+    .where(eq(subscriptions.channelId, channelId))
+    .limit(1);
+  return rows[0]?.youtubeSubId ?? null;
+}
+
+/** Soft-delete a single subscription after a successful API unsubscribe. */
+export async function markSubscriptionDeleted(
+  db: Db,
+  channelId: string,
+  deletedAt: number,
+): Promise<void> {
+  await db.update(subscriptions).set({ deletedAt }).where(eq(subscriptions.channelId, channelId));
 }
 
 // --- videos (M1) ---

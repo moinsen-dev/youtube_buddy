@@ -12,6 +12,7 @@ export const QUOTA_WARN_RATIO = 0.8;
  * is intentionally absent — it is banned by project rule (100 units/call). */
 export const UNIT_COSTS = {
   'subscriptions.list': 1,
+  'subscriptions.delete': 50,
   'channels.list': 1,
   'playlists.list': 1,
   'playlistItems.list': 1,

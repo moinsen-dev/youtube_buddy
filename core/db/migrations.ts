@@ -98,6 +98,13 @@ export const migrations: Migration[] = [
       'CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(title, body_md)',
     ],
   },
+  {
+    id: '0010_m9_hygiene',
+    statements: [
+      // subscriptions.delete needs the API subscription resource id (M9).
+      'ALTER TABLE subscriptions ADD COLUMN youtube_sub_id TEXT',
+    ],
+  },
 ];
 
 /**

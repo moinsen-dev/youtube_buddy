@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-21
-**Aktuelle Phase:** **Phase 9 (Semantische Suche, M8) abgeschlossen ✅** → nächster Schritt **Phase 10 (Subscription-Hygiene, M9)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 10 (Subscription-Hygiene, M9) abgeschlossen ✅** → nächster Schritt **Phase 10.5 (Pro-Tier: E2E-Sync & Cloud-Analyse)** gemäß `docs/ROADMAP.md`
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -280,6 +280,21 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Offen aus Phase 9:** Filter Kanal/Zeitraum/Sehquote im Suche-Screen (Scope-Rest, Chips für Typ vorhanden); Embedding-Format-Änderungen erfordern neue Modell-ID (Cache-Key der `embeddings`-Tabelle).
 
+## Phase 10 — Ergebnis (2026-07-21, abgeschlossen)
+
+**Gebaut:** Migration `0010_m9_hygiene` (`subscriptions.youtube_sub_id` — die API-Resource-ID ist das Delete-Ziel; Backfill beim nächsten Sync); Sehverhalten-Report `listChannelWatchStats` (SQL `subscriptions` × `watch_sessions` via `videos`: distinct Videos, Ø-Quote, zuletzt geschaut); Regel-Engine `features/hygiene/rules.ts` (pure, 7 Tests: 💤 6 Mo, 0 Views/90 T, Quote < 10 % ab 3 Videos); `YouTubeClient.delete` + `subscriptions.delete` = 50 Units in `UNIT_COSTS`; **inkrementeller Scope** `youtube.force-ssl` nativ (Re-Configure + Sign-In — Consent zeigt nur den neuen Scope) und Web (GIS-Token-Client mit Zusatz-Scope), `AuthContext.scopes` + `requestForceSslScope()`; Hygiene-Screen (DESIGN 5.10: Vorschläge mit Checkboxen, „Alle auswählen", „Am meisten geschaut", CTA mit Fortschritt, Bestätigungs-Dialog, Fehler-Report) + Route `/hygiene` + Einstieg im Mehr-Tab; `unsubscribeChannels` (Sub-ID lokal oder 1-Unit-Lookup, lokales Soft-Delete pro Erfolg, Quota-Block bricht sauber ab, Sync-TTL-Invalidierung). 111 Tests + tsc + eslint 0 Fehler.
+
+**Verifikations-Matrix (Exit-Kriterien):**
+
+| Kriterium                     | Beleg                                                                                                                                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Report zeigt reale 💤-Kanäle  | ✅ Negativ-Fall korrekt (frischer Account → 0 Vorschläge); nach künstlicher Alterung zweier Kanäle: Kurzgesagt „💤 seit 6 Mo", Babish „0 Views/90 T", sportstudio korrekt ohne Vorschlag (Screenshot `.verification/phase10_hygiene_suggestions.png`) |
+| Unsubscribe-Flow Ende-zu-Ende | ✅ Kurzgesagt (Test-Account developer@moinsen.dev): Checkbox → Dialog → `subscriptions.delete` (204) → `deleted_at` lokal → anschließender `subscriptions.list`-Sync bestätigt Server-seitig (kein Resurrect)                                         |
+| Scope-Dialog                  | ✅ Google-Consent zeigt genau den neuen Scope („See, edit, and permanently delete your YouTube …") — Screenshot `.verification/phase10_google_consent.png`                                                                                            |
+| Quota-Disziplin               | ✅ 50 Units deklariert + geloggt (`quota_log` 2026-07-21: 53 = 3 Sync + 50 Delete)                                                                                                                                                                    |
+
+**Notizen:** (a) Verifikations-Historie im Testbestand wurde nach der Regel-Verifikation wiederhergestellt (Timestamps restauriert); der Kurzgesagt-Unsubscribe ist real und bleibt. (b) Der Consent wurde im ersten Anlauf erteilt (Sheet sichtbar), der Delete lief im zweiten Anlauf direkt durch — danach tragen auch Silent-Refresh-Tokens den Scope. (c) Emulator verlor während der Session wiederholt den App-Prozess (Speicherdruck durch geladenes 2-GB-LLM + GMS) — Verifikations-Flows zügig und mit frischem App-Start ausführen. (d) Could-Scope Takeout-Import: bewusst nicht begonnen (Roadmap markiert ihn als Entscheidung nach erster Nutzung).
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -293,8 +308,8 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
 10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
 
-## Nächste Schritte (Phase 10 — Subscription-Hygiene, M9)
+## Nächste Schritte (Phase 10.5 — Pro-Tier: E2E-Sync & Cloud-Analyse)
 
-1. Scope gemäß `docs/ROADMAP.md` Phase 10: Kanal-Übersicht mit Kosten-/Aktivitäts-Signalen, „zuletzt gesehen"-Sortierung, Unsubscribe-Deep-Links (YouTube-App/Browser), Watchtime-pro-Kanal-Statistik aus `watch_events`.
-2. Konzept-Dedup kann jetzt auf die `embeddings`-Tabelle aufsetzen (Clustering statt reiner String-Ähnlichkeit) — bei Gelegenheit als Golden-Set-Gate nachrüsten.
-3. Danach Phase 10.5 (Pro-Tier: Firebase E2E-Sync + Gemini Cloud-Analyse Opt-in, RevenueCat) per ADR.
+1. Scope gemäß `docs/ROADMAP.md` Phase 10.5 + ADR PRD §7.6: Firebase-Setup im bestehenden GCP-Projekt (dev/prod), Auth (Google-Provider), Firestore (Owner-only Rules, nur Ciphertext), Cloud Functions EU (Gemini-Proxy), `core/sync` (Passphrase/Device-Key + Recovery), `CloudEngine` (Gemini via Function, Opt-in), RevenueCat-Entitlements. Skills: `firebase-environments`, `firebase-mcp-ops`, `integrate-revenuecat`.
+2. Alternativ zuerst Phase 11 (Web-KI & Web-Polish) — Phase 10.5 ist der fachlich größere Block und per ADR als Nächstes vorgesehen; Entscheidung beim User.
+3. Offen aus Phase 10: Takeout-Import (Could, Entscheidung nach erster Nutzung).

@@ -40,6 +40,8 @@ export const subscriptions = sqliteTable('subscriptions', {
     .references(() => channels.id),
   subscribedAt: integer('subscribed_at').notNull(),
   deletedAt: integer('deleted_at'),
+  /** YouTube subscription resource id (needed for subscriptions.delete, M9). */
+  youtubeSubId: text('youtube_sub_id'),
 });
 
 export const videos = sqliteTable('videos', {

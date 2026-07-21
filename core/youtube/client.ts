@@ -48,6 +48,7 @@ const MAX_RETRIES = 2;
 /** Endpoint names (used for quota) → URL paths of the YouTube Data API v3. */
 const ENDPOINT_PATHS: Record<YouTubeEndpoint, string> = {
   'subscriptions.list': 'subscriptions',
+  'subscriptions.delete': 'subscriptions',
   'channels.list': 'channels',
   'playlists.list': 'playlists',
   'playlistItems.list': 'playlistItems',
@@ -115,9 +116,26 @@ export class YouTubeClient {
     return parsed;
   }
 
+  /**
+   * DELETE call (M9: subscriptions.delete). No ETag, no body — quota is
+   * recorded after success like in get().
+   */
+  async delete(endpoint: YouTubeEndpoint, params: Record<string, string>): Promise<void> {
+    const url = `${this.baseUrl}/${ENDPOINT_PATHS[endpoint]}?${new URLSearchParams(params).toString()}`;
+    const response = await this.requestWithRetry(url, {}, 'DELETE');
+    if (!response.ok && response.status !== 204) {
+      throw new YouTubeApiError(
+        response.status,
+        `YouTube API ${endpoint} failed with ${response.status}`,
+      );
+    }
+    await guardQuota(this.options.quotaStore, endpoint, { onWarn: this.options.onQuotaWarn });
+  }
+
   private async requestWithRetry(
     url: string,
     extraHeaders: Record<string, string>,
+    method: 'GET' | 'DELETE' = 'GET',
   ): Promise<Response> {
     let retried401 = false;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -126,6 +144,7 @@ export class YouTubeClient {
         throw new YouTubeApiError(401, 'No access token available');
       }
       const response = await this.fetchFn(url, {
+        method,
         headers: { Authorization: `Bearer ${token}`, ...extraHeaders },
       });
 

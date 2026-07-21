@@ -105,6 +105,7 @@ export async function syncSubscriptions(
         channelId,
         subscribedAt: parseIsoDate(item.snippet.publishedAt) ?? now,
         deletedAt: null,
+        youtubeSubId: item.id,
       });
     }
     pageToken = response.nextPageToken;
