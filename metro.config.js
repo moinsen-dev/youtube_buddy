@@ -18,7 +18,11 @@ config.server = {
     const base = enhanceMiddleware ? enhanceMiddleware(middleware, server) : middleware;
     return (req, res, next) => {
       res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
-      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      // same-origin-allow-popups: crossOriginIsolated stays true (SAB for
+      // expo-sqlite) AND OAuth popups keep their opener — plain
+      // 'same-origin' severed the Google sign-in popup from the app
+      // (token never came back; verified with the user, phase 11).
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
       return base(req, res, next);
     };
   },
