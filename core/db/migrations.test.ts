@@ -65,6 +65,7 @@ const MIGRATION_IDS = [
   '0008_m7_travel',
   '0009_m8_embeddings',
   '0010_m9_hygiene',
+  '0011_m95_sync',
 ];
 
 describe('core/db migration runner', () => {

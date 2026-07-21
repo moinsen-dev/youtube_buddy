@@ -32,6 +32,15 @@ kimi-code soll jede Roadmap-Phase (0–12) autonom umsetzen: Code schreiben, App
 | `marionette` | stdio (Wrapper-Skript) | ✗ broken (`marionette_mcp` nicht installierbar) | iOS-Sim-Automatisierung; obsolet, sobald Expo-MCP lokal läuft |
 | `gdai-mcp` | stdio (`uv`, Godot-Plugin) | ✗ nicht aktiv | Godot-Projekt, für YT Buddy irrelevant |
 
+### 2.2a MCP-Server — Projekt-Level `.mcp.json` (Phase 10.5, wirkt nach Session-Neustart)
+
+| Server | Transport | Status | Zweck für YT Buddy |
+|---|---|---|---|
+| `firebase` | stdio (`npx firebase-tools@latest mcp --dir <repo> --only auth,firestore,storage`) | ⏳ konfiguriert (2026-07-21), aktiv ab nächster Session | Firestore/Auth-Ops auf **dev** (Rules-Validierung, Test-User, Seeding); Auth = Firebase-CLI-Login (`developer@moinsen.dev`), Default-Alias = dev — Skill `firebase-mcp-ops` |
+| `revenuecat` | stdio via `mcp-remote@0.1.36` → `https://mcp.revenuecat.ai/mcp` | ⏳ konfiguriert (2026-07-21); OAuth-Flow beim ersten Call | Pro-Tier-Dashboard: Projekt/App/Entitlement `pro`, Produkte/Offerings, Test-Store — Skills `integrate-revenuecat`, `create-revenuecat-project` |
+
+Bewusst **nicht** freigeschaltet: Crashlytics/Analytics/Remote-Config (Local-only-Regel, ADR PRD §7.6).
+
 Hinweis: Die Legacy-Datei `~/.kimi/mcp.json` (alte Python-Linie, siehe §4) enthält dieselben Server plus `expo`; sie wird vom aktuellen kimi-code nicht mehr gelesen und bleibt unangetastet.
 
 ### 2.3 CLIs und native Toolchains

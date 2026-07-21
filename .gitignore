@@ -49,3 +49,9 @@ secrets/
 
 # Skills-CLI symlink cache (rebuilt from skills-lock.json on each machine)
 .claude/
+
+# Firebase (phase 10.5)
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/

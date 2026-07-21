@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "mcp",
+        "--dir",
+        "/Users/udi/work/moinsen/ideas/youtube_buddy",
+        "--only",
+        "auth,firestore,storage"
+      ]
+    },
+    "revenuecat": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@0.1.36", "https://mcp.revenuecat.ai/mcp"]
+    }
+  }
+}

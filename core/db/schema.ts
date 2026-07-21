@@ -164,6 +164,8 @@ export const notes = sqliteTable('notes', {
   bodyMd: text('body_md').notNull(),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
+  /** Stable cross-device id for Pro-Sync (trigger-filled, M9.5). */
+  syncId: text('sync_id'),
 });
 
 export const flashcards = sqliteTable(
@@ -182,6 +184,10 @@ export const flashcards = sqliteTable(
     dueAt: integer('due_at').notNull(),
     reps: integer('reps').notNull().default(0),
     createdAt: integer('created_at').notNull(),
+    /** LWW timestamp for Pro-Sync (M9.5) — set on every SRS update. */
+    updatedAt: integer('updated_at').notNull().default(0),
+    /** Stable cross-device id for Pro-Sync (trigger-filled, M9.5). */
+    syncId: text('sync_id'),
   },
   (table) => [index('idx_flashcards_due').on(table.dueAt)],
 );

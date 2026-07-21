@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-21
-**Aktuelle Phase:** **Phase 10 (Subscription-Hygiene, M9) abgeschlossen ✅** → nächster Schritt **Phase 10.5 (Pro-Tier: E2E-Sync & Cloud-Analyse)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 10.5 (Pro-Tier: E2E-Sync & Cloud-Analyse) in Arbeit 🔨** — Basis geschaffen (s. Abschnitt unten), Rest nach MCP-Neustart + Blaze-Upgrade
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -295,6 +295,30 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Notizen:** (a) Verifikations-Historie im Testbestand wurde nach der Regel-Verifikation wiederhergestellt (Timestamps restauriert); der Kurzgesagt-Unsubscribe ist real und bleibt. (b) Der Consent wurde im ersten Anlauf erteilt (Sheet sichtbar), der Delete lief im zweiten Anlauf direkt durch — danach tragen auch Silent-Refresh-Tokens den Scope. (c) Emulator verlor während der Session wiederholt den App-Prozess (Speicherdruck durch geladenes 2-GB-LLM + GMS) — Verifikations-Flows zügig und mit frischem App-Start ausführen. (d) Could-Scope Takeout-Import: bewusst nicht begonnen (Roadmap markiert ihn als Entscheidung nach erster Nutzung).
 
+## Phase 10.5 — Zwischenstand (2026-07-21, in Arbeit)
+
+**Geschafft (verifiziert, 127 Tests grün, tsc/eslint 0 Fehler):**
+
+- **Firebase-Projekte:** `youtube-buddy-moinsen` (Bestand = **prod**) + `youtube-buddy-moinsen-dev` (**dev, default**) angelegt/aktiviert; `.firebaserc` Aliase; Web-App im Dev-Projekt registriert (apiKey/appId in `app.config.ts`, öffentliche Client-Werte).
+- **Repo-Struktur:** `firebase.json`, `firestore.rules` (Owner-only `users/{uid}/**`, Server = blind), `firestore.indexes.json`, Emulator-Config; `functions/` (Node 22 + TS, **europe-west3**): HTTPS-Endpoint `analyze` (Gemini via `@google/genai` Vertex-Modus, `responseSchema`-JSON-Mode, Firebase-ID-Token-Verifikation, `gemini-2.5-flash` als Default bis Golden-Set-Pinning) — tsc kompiliert sauber.
+- **Env-Switch:** `app.config.ts` liest `EXPO_PUBLIC_ENV` (Default `development`), Firebase-Config in `extra.firebase` (prod folgt beim Rollout).
+- **`core/sync` (komplett getestet):** E2E-Crypto (Master-Key 256-bit, tweetnacl secretbox; Recovery-Code 24 Zeichen → scrypt-Wrap — Server sieht nur Ciphertext); Firebase Auth via **REST Identity Toolkit** (Google ID-/Access-Token → Firebase-Identität, kein natives Firebase-SDK nötig); Firestore REST-Transport; LWW-Engine (push since/pull, FK-sichere Reihenfolge); Entitäts-Adapter channels/videos/concepts/notes/analyses/flashcards mit naturalisierten FKs (sync_id für notes/flashcards via **Migration 0011** inkl. Trigger-Defaults; flashcards.updated_at als LWW-Stempel).
+- **`CloudEngine`** (LLMEngine-Interface, `EngineId 'cloud'`): POST an `analyze` mit `z.toJSONSchema`, zod-Client-Validierung, `embed()` bleibt bewusst on-device. 4 Tests.
+- **`ProSession`**: Firebase-Identität (Restore/Refresh via SecureStore), Master-Key-Verwaltung (enableSync → Recovery-Code einmalig; joinSync → Unwrap). 5 Tests.
+- **Deploys:** Firestore Rules + Indexes auf dev deployed; DB wurde versehentlich in nam5 auto-erstellt → gelöscht und in **europe-west3** neu angelegt (verifiziert), Rules/Indexes erneut deployed.
+- **MCP-Setup:** `.mcp.json` mit `firebase` (CLI-Login, `--only auth,firestore,storage`) + `revenuecat` (gehostet, mcp-remote wie expo) — **wirkt erst nach kimi-code-Neustart**.
+
+**Blocker / User-Aktionen (in dieser Reihenfolge):**
+
+1. **kimi-code neu starten** → firebase/revenuecat MCPs laden (OAuth-Flow für RevenueCat beim ersten Call).
+2. **Blaze-Upgrade** für `youtube-buddy-moinsen-dev` (Cloud Functions/Build brauchen Pay-as-you-go; exakte Fehlermeldung liegt vor: `cloudbuild.googleapis.com can't be enabled until the upgrade is complete`): https://console.firebase.google.com/project/youtube-buddy-moinsen-dev/usage/details — dann deploye ich die Function.
+3. **gcloud auth login** (Token abgelaufen) — für IAM/Billing-Checks + ggf. Auth-Provider-Aktivierung via API.
+4. **Google-Provider in Firebase Auth (dev) aktivieren** — per Firebase-MCP (falls verfügbar), Console-Klick oder Identity-Platform-API (nach 3).
+
+**Offen für die Fortsetzung (nächste Session):** Pro-Sektion im Mehr-Tab (Sync aktivieren/beitreten/jetzt synchronisieren, Cloud-Opt-in-Toggle), Engine-Auswahl (CloudEngine hinter Entitlement), RevenueCat Dashboard (Projekt/App/Entitlement `pro` via MCP, Test-Store) + `react-native-purchases` (nativer Rebuild), Server-seitige Entitlement-Prüfung (ADR-Detail: RC-Webhook → Custom Claims), Golden-Set-Benchmark Gemini → Modell-Pinning, E2E-Verifikation zwei Geräte (Emulator + zweite Instanz), Takeout bleibt Could.
+
+**Bewusste v1-Grenzen (im Code dokumentiert):** keine Delete-Tombstones (Löschen bleibt lokal), `concepts.note_id` wird nicht synchronisiert, Transkripte/Embeddings/Modelle bleiben lokal (ADR), Web = read-only für Pro.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -308,8 +332,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
 10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
 
-## Nächste Schritte (Phase 10.5 — Pro-Tier: E2E-Sync & Cloud-Analyse)
+## Nächste Schritte (Phase 10.5 — Fortsetzung)
 
-1. Scope gemäß `docs/ROADMAP.md` Phase 10.5 + ADR PRD §7.6: Firebase-Setup im bestehenden GCP-Projekt (dev/prod), Auth (Google-Provider), Firestore (Owner-only Rules, nur Ciphertext), Cloud Functions EU (Gemini-Proxy), `core/sync` (Passphrase/Device-Key + Recovery), `CloudEngine` (Gemini via Function, Opt-in), RevenueCat-Entitlements. Skills: `firebase-environments`, `firebase-mcp-ops`, `integrate-revenuecat`.
-2. Alternativ zuerst Phase 11 (Web-KI & Web-Polish) — Phase 10.5 ist der fachlich größere Block und per ADR als Nächstes vorgesehen; Entscheidung beim User.
-3. Offen aus Phase 10: Takeout-Import (Could, Entscheidung nach erster Nutzung).
+1. **User:** kimi-Neustart (MCPs), Blaze-Upgrade dev, `gcloud auth login` — dann Google-Provider in Firebase Auth aktivieren (MCP/Console/API).
+2. Functions deployen, Pro-Sektion im Mehr-Tab + Engine-Auswahl hinter Entitlement.
+3. RevenueCat via MCP (Projekt, App, Entitlement `pro`, Test-Store-Key) + `react-native-purchases` einbauen (nativer Rebuild Android/iOS).
+4. Golden-Set-Benchmark Gemini → Modell-Pinning; E2E-Sync-Verifikation zwei Geräte; erst danach Docs-Exit-Kriterien abhaken.

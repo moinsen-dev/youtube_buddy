@@ -582,7 +582,10 @@ export async function updateFlashcardScheduling(
   cardId: number,
   patch: { ease: number; intervalDays: number; dueAt: number; reps: number },
 ): Promise<void> {
-  await db.update(flashcards).set(patch).where(eq(flashcards.id, cardId));
+  await db
+    .update(flashcards)
+    .set({ ...patch, updatedAt: Date.now() })
+    .where(eq(flashcards.id, cardId));
 }
 
 export async function insertFlashcardReview(

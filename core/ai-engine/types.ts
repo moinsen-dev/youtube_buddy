@@ -6,7 +6,7 @@ import type { z } from 'zod';
  * (web, phase 11).
  */
 
-export type EngineId = 'llamacpp' | 'webllm';
+export type EngineId = 'llamacpp' | 'webllm' | 'cloud';
 
 export interface EngineCapabilities {
   chat: boolean;

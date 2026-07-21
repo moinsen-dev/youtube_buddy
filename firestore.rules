@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// YouTube Buddy Pro-Sync (ADR PRD §7.6): the server is blind — it only ever
+// stores client-encrypted ciphertext, owned strictly per Firebase Auth uid.
+// No cross-user reads, no public data, no listing of other users' trees.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

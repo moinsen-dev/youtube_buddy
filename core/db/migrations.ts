@@ -105,6 +105,30 @@ export const migrations: Migration[] = [
       'ALTER TABLE subscriptions ADD COLUMN youtube_sub_id TEXT',
     ],
   },
+  {
+    id: '0011_m95_sync',
+    statements: [
+      // LWW change tracking for Pro-Sync (ADR PRD §7.6).
+      'ALTER TABLE flashcards ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0',
+      'UPDATE flashcards SET updated_at = created_at WHERE updated_at = 0',
+      // Stable cross-device ids (local autoincrement ids collide between
+      // devices). Triggers fill sync_id on every insert path automatically.
+      'ALTER TABLE notes ADD COLUMN sync_id TEXT',
+      'ALTER TABLE flashcards ADD COLUMN sync_id TEXT',
+      'UPDATE notes SET sync_id = lower(hex(randomblob(16))) WHERE sync_id IS NULL',
+      'UPDATE flashcards SET sync_id = lower(hex(randomblob(16))) WHERE sync_id IS NULL',
+      'CREATE UNIQUE INDEX IF NOT EXISTS uq_notes_sync_id ON notes (sync_id)',
+      'CREATE UNIQUE INDEX IF NOT EXISTS uq_flashcards_sync_id ON flashcards (sync_id)',
+      `CREATE TRIGGER IF NOT EXISTS notes_sync_id_default AFTER INSERT ON notes
+       WHEN NEW.sync_id IS NULL BEGIN
+         UPDATE notes SET sync_id = lower(hex(randomblob(16))) WHERE id = NEW.id;
+       END`,
+      `CREATE TRIGGER IF NOT EXISTS flashcards_sync_id_default AFTER INSERT ON flashcards
+       WHEN NEW.sync_id IS NULL BEGIN
+         UPDATE flashcards SET sync_id = lower(hex(randomblob(16))) WHERE id = NEW.id;
+       END`,
+    ],
+  },
 ];
 
 /**
