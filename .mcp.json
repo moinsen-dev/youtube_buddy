@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "expo": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@0.1.36", "https://mcp.expo.dev/mcp"]
+    },
     "firebase": {
       "command": "npx",
       "args": [

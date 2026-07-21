@@ -26,18 +26,21 @@ kimi-code soll jede Roadmap-Phase (0–12) autonom umsetzen: Code schreiben, App
 
 | Server | Transport | Status | Zweck für YT Buddy |
 |---|---|---|---|
-| `expo` | stdio via `mcp-remote`-Bridge → `https://mcp.expo.dev/mcp` | ✅ **aktiv & authentifiziert** (nativer HTTP-Eintrag hängt in 0.27.0 — §4, §8) | Expo-Docs live, SDK-kompatible Paket-Installation, EAS Builds/Workflows/Logs, TestFlight-/Store-Daten, lokale UI-Automatisierung |
 | `chrome-devtools` | stdio (`npx chrome-devtools-mcp`) | ✅ aktiv | Web-Plattform verifizieren (Snapshots, Console, Network, Lighthouse) |
 | `patrol` | stdio (`dart run patrol_mcp`) | ✅ aktiv | Flutter-Test-Framework (andere Projekte) — für YT Buddy (RN/Expo) **nicht primär**; stattdessen Maestro |
 | `marionette` | stdio (Wrapper-Skript) | ✗ broken (`marionette_mcp` nicht installierbar) | iOS-Sim-Automatisierung; obsolet, sobald Expo-MCP lokal läuft |
 | `gdai-mcp` | stdio (`uv`, Godot-Plugin) | ✗ nicht aktiv | Godot-Projekt, für YT Buddy irrelevant |
+| ~~`expo`~~ | — | **umgezogen in die Projekt-`.mcp.json`** (2026-07-21) | Expo-Server nur noch pro Projekt geladen — sonst Auth-Prompt bei jedem kimi-Start in jedem beliebigen Projekt |
 
 ### 2.2a MCP-Server — Projekt-Level `.mcp.json` (Phase 10.5, wirkt nach Session-Neustart)
 
 | Server | Transport | Status | Zweck für YT Buddy |
 |---|---|---|---|
+| `expo` | stdio via `mcp-remote@0.1.36` → `https://mcp.expo.dev/mcp` | ✅ aktiv & authentifiziert (Tokens im mcp-remote-Cache pro URL — der Umzug aus der User-Config am 2026-07-21 braucht **keine** Neu-Auth) | Expo-Docs live, SDK-kompatible Paket-Installation, EAS Builds/Workflows/Logs, TestFlight-/Store-Daten, lokale UI-Automatisierung |
 | `firebase` | stdio (`npx firebase-tools@latest mcp --dir <repo> --only auth,firestore,storage`) | ⏳ konfiguriert (2026-07-21), aktiv ab nächster Session | Firestore/Auth-Ops auf **dev** (Rules-Validierung, Test-User, Seeding); Auth = Firebase-CLI-Login (`developer@moinsen.dev`), Default-Alias = dev — Skill `firebase-mcp-ops` |
 | `revenuecat` | stdio via `mcp-remote@0.1.36` → `https://mcp.revenuecat.ai/mcp` | ⏳ konfiguriert (2026-07-21); OAuth-Flow beim ersten Call | Pro-Tier-Dashboard: Projekt/App/Entitlement `pro`, Produkte/Offerings, Test-Store — Skills `integrate-revenuecat`, `create-revenuecat-project` |
+
+**Konvention (seit 2026-07-21):** MCPs grundsätzlich **pro Projekt** in `<repo>/.mcp.json`, nicht global — sonst verlangt jeder kimi-Start in jedem Projekt sofort eine Auth des globalen Servers. Global bleiben nur projektlose Werkzeuge (`chrome-devtools`).
 
 Bewusst **nicht** freigeschaltet: Crashlytics/Analytics/Remote-Config (Local-only-Regel, ADR PRD §7.6).
 
