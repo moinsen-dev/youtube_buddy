@@ -39,11 +39,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     env: ENV,
     // Undefined outside known environments → Pro features stay disabled.
     firebase: FIREBASE_CONFIGS[ENV],
-    // Public RevenueCat SDK keys per platform (filled after the store apps
-    // exist; test store key first). Empty = purchases module stays inert.
+    // Public RevenueCat SDK keys per platform (safe to embed per RC docs).
+    // Default = Test Store key (works on both platforms); real store keys
+    // land via env with the store rollout.
     revenuecat: {
-      iosKey: process.env.REVENUECAT_IOS_KEY ?? '',
-      androidKey: process.env.REVENUECAT_ANDROID_KEY ?? '',
+      iosKey: process.env.REVENUECAT_IOS_KEY ?? 'test_tPFynWDSvFMJMfBMSobAeFPTrbG',
+      androidKey: process.env.REVENUECAT_ANDROID_KEY ?? 'test_tPFynWDSvFMJMfBMSobAeFPTrbG',
     },
   },
 });

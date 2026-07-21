@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Constants from 'expo-constants';
 
 import { getDb } from '@/core/db';
 import { getSetting, setSetting } from '@/core/db/repositories';
@@ -17,6 +18,16 @@ import { useAuth } from '@/features/auth/auth-context';
 import { formatRecoveryCode } from '@/core/sync/crypto';
 
 import { CLOUD_OPT_IN_KEY, getProSession } from './pro-engine';
+import {
+  configurePurchases,
+  getCustomerAccess,
+  getProPackages,
+  purchasePackage,
+  restorePurchases,
+  type CustomerAccess,
+  type ProPackage,
+  type RevenueCatKeys,
+} from './purchases';
 import { fetchWrappedKey, runSync, uploadWrappedKey } from './run-sync';
 
 /**
@@ -35,6 +46,9 @@ export function ProSection() {
   const [busy, setBusy] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [rcReady, setRcReady] = useState(false);
+  const [access, setAccess] = useState<CustomerAccess | null>(null);
+  const [packages, setPackages] = useState<ProPackage[]>([]);
 
   const reload = useCallback(async () => {
     const session = await getProSession();
@@ -44,6 +58,17 @@ export function ProSection() {
     setSyncReady((await session.getMasterKey()) !== null);
     const db = await getDb();
     if (db) setCloudOptIn((await getSetting(db, CLOUD_OPT_IN_KEY)) === 'true');
+
+    // RevenueCat: configure lazily, then read access + offering (rc-* rules:
+    // entitlement.isActive is the only Pro gate).
+    const keys = (Constants.expoConfig?.extra as { revenuecat?: RevenueCatKeys } | undefined)
+      ?.revenuecat;
+    const ok = keys ? await configurePurchases(keys).catch(() => false) : false;
+    setRcReady(ok);
+    if (ok) {
+      setAccess(await getCustomerAccess().catch(() => null));
+      setPackages(await getProPackages().catch(() => []));
+    }
   }, []);
 
   useEffect(() => {
@@ -147,6 +172,34 @@ export function ProSection() {
     if (db) await setSetting(db, CLOUD_OPT_IN_KEY, value ? 'true' : 'false');
   }, []);
 
+  const buy = useCallback(async (identifier: string) => {
+    setBusy('buy');
+    setError(null);
+    try {
+      setAccess(await purchasePackage(identifier));
+    } catch (cause) {
+      // userCancelled is a normal outcome — stay silent (rc-error-handling).
+      const message = cause instanceof Error ? cause.message : String(cause);
+      if (!/cancel/i.test(message)) setError(message);
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
+  const restore = useCallback(async () => {
+    setBusy('restore');
+    setError(null);
+    try {
+      const result = await restorePurchases();
+      setAccess(result);
+      if (!result.isPro) setError('Keine aktiven Käufe gefunden.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
   if (Platform.OS === 'web') {
     return null; // v1: Pro is native-only (web persistence lands in phase 11)
   }
@@ -169,6 +222,36 @@ export function ProSection() {
       <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
         Opt-in. Free bleibt 100 % lokal — ohne Verbindung verlässt nichts das Gerät.
       </Text>
+
+      {rcReady &&
+        (access?.isPro ? (
+          <Text style={[theme.typography.bodyStrong, { color: theme.colors.success }]}>
+            Pro aktiv{access.store ? ` (${access.store})` : ''}
+          </Text>
+        ) : (
+          <>
+            {packages.map((pkg) => (
+              <Button
+                key={pkg.identifier}
+                label={`Pro ${pkg.period === 'monthly' ? 'monatlich' : pkg.period === 'annual' ? 'jährlich' : ''} — ${pkg.priceString}`}
+                onPress={() => void buy(pkg.identifier)}
+                disabled={busy !== null}
+              />
+            ))}
+            {packages.length > 0 && (
+              <Pressable
+                onPress={() => void restore()}
+                accessibilityRole="button"
+                accessibilityLabel="Käufe wiederherstellen"
+                style={{ minHeight: theme.touchTarget.default, justifyContent: 'center' }}
+              >
+                <Text style={[theme.typography.caption, { color: theme.colors.accentPrimary }]}>
+                  Käufe wiederherstellen
+                </Text>
+              </Pressable>
+            )}
+          </>
+        ))}
 
       {uid ? (
         <>

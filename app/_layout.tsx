@@ -1,28 +1,22 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import Constants from 'expo-constants';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { getDb } from '@/core/db';
 import { useTheme } from '@/core/theme';
 import { AuthProvider } from '@/features/auth/auth-context';
-import { configurePurchases, type RevenueCatKeys } from '@/features/pro/purchases';
 
 export default function RootLayout() {
   const theme = useTheme();
 
   useEffect(() => {
     getDb().catch((error) => console.error('[db] init failed', error));
-    // RevenueCat (Pro-Tier): configures only when public SDK keys exist —
-    // without them the module stays inert (dev mode, see STATE.md).
-    const keys = (Constants.expoConfig?.extra as { revenuecat?: RevenueCatKeys } | undefined)
-      ?.revenuecat;
-    if (keys) {
-      configurePurchases(keys).catch((error) =>
-        console.warn('[purchases] configure failed', error),
-      );
-    }
+    // RevenueCat configures deliberately NOT here: with SDK keys present,
+    // configure would phone home on every launch — also for free users,
+    // which violates the local-only rule for the free tier (ADR §7.6:
+    // "Free ohne Pro sehen keinerlei Server-Traffic"). The SDK configures
+    // lazily when the Pro section is opened (features/pro/pro-section).
   }, []);
 
   return (
