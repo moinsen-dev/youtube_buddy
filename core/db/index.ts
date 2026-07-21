@@ -60,4 +60,15 @@ export function resetDb(): void {
   db = null;
 }
 
+/**
+ * Raw sqlite handle for the rare call sites that must avoid drizzle's
+ * sync-only driver on web (wa-sqlite deadlocks on sync sequences, phase 11
+ * — the JSON backup import). Opens the DB when needed.
+ */
+export async function getRawDb(): Promise<SQLiteDatabase> {
+  await getDb();
+  if (!sqlite) throw new Error('getRawDb: no sqlite handle');
+  return sqlite;
+}
+
 export { schema };

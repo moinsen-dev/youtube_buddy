@@ -40,6 +40,9 @@ function createFakeExecutor(): SqliteExecutor & {
       if (sql.startsWith('SELECT id FROM __migrations')) {
         return state.appliedIds.map((id) => ({ id })) as T[];
       }
+      if (sql.includes('sqlite_compileoption_used')) {
+        return [{ used: 1 }] as T[]; // native test double: FTS5 available
+      }
       return [];
     },
     async withTransactionAsync(fn: () => Promise<void>) {

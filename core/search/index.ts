@@ -156,15 +156,27 @@ export async function indexMissingEmbeddings(
     onProgress?.(done, missing.length);
   }
 
-  // Keep the FTS tables in sync (rebuilt wholesale — cheap at our sizes).
-  await db.run(sql`DELETE FROM chunks_fts`);
-  await db.run(sql`INSERT INTO chunks_fts (rowid, text) SELECT id, text FROM transcript_chunks`);
-  await db.run(sql`DELETE FROM notes_fts`);
-  await db.run(
-    sql`INSERT INTO notes_fts (rowid, title, body_md) SELECT id, title, body_md FROM notes`,
-  );
+  // Keep the FTS tables in sync when the build has FTS5 (rebuilt wholesale —
+  // cheap at our sizes). expo-sqlite's web WASM has no FTS5 (phase 11):
+  // tables are absent there and search degrades to vector-only.
+  if (await hasFtsTables(db)) {
+    await db.run(sql`DELETE FROM chunks_fts`);
+    await db.run(sql`INSERT INTO chunks_fts (rowid, text) SELECT id, text FROM transcript_chunks`);
+    await db.run(sql`DELETE FROM notes_fts`);
+    await db.run(
+      sql`INSERT INTO notes_fts (rowid, title, body_md) SELECT id, title, body_md FROM notes`,
+    );
+  }
 
   return done;
+}
+
+/** True when the FTS5 tables exist (false on expo-sqlite web, phase 11). */
+export async function hasFtsTables(db: Db): Promise<boolean> {
+  const rows = await db.all<{ name: string }>(
+    sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('chunks_fts', 'notes_fts')`,
+  );
+  return rows.length === 2;
 }
 
 export interface ScoredOwner {
@@ -239,8 +251,10 @@ export interface FtsHit {
   ownerId: number;
 }
 
-/** FTS5 keyword search over chunks + notes; typed owner ids ranked by bm25. */
+/** FTS5 keyword search over chunks + notes; typed owner ids ranked by bm25.
+ * Returns [] when the build has no FTS5 (expo-sqlite web, phase 11). */
 export async function ftsSearch(db: Db, query: string, k = 20): Promise<FtsHit[]> {
+  if (!(await hasFtsTables(db))) return [];
   const escaped = query.replace(/"/g, '""');
   const terms = escaped
     .split(/\s+/)

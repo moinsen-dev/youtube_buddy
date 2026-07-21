@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-21
-**Aktuelle Phase:** **Phase 10.5 (Pro-Tier) im Kern abgeschlossen ✅** (Sync 2-Geräte-E2E, Cloud-Analyse, Kauf-Flow Sandbox Android verifiziert — Restpunkte s. Matrix unten) → nächster Schritt **Phase 11 (Web-KI & Web-Polish, M10)** gemäß `docs/ROADMAP.md`
+**Aktuelle Phase:** **Phase 11 (Web-KI & Web-Polish) — Kern gelegt ✅** (Web-DB, Datei-Brücke Phone→Web, Read-only-Modus; Rest WebLLM/schriftliche Parität offen) → Details unten
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -338,6 +338,19 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Bewusste v1-Grenzen (im Code dokumentiert):** keine Delete-Tombstones (Löschen bleibt lokal), `concepts.note_id` wird nicht synchronisiert, Transkripte/Embeddings/Modelle bleiben lokal (ADR), Web = read-only für Pro.
 
+## Phase 11 — Zwischenstand (2026-07-21, Kern gelegt)
+
+**Gebaut & verifiziert (headless Chrome 150 via CDP):**
+
+- **expo-sqlite auf Web:** `metro.config.js` (wasm-Asset + COOP/COEP-Header); `core/db/index.web.ts` mit **async open** (Sync-API = „Sync operation timeout"), **memoisiertem Open-Promise** (OPFS erlaubt genau 1 Access Handle pro Datei — parallele getDb()-Aufrufe crashten mit `unable to open database file`) und Close-bei-Fehler (Handle-Leaks blockierten alle späteren Opens). Alle 11 Migrationen laufen, idempotent. **FTS5 fehlt im wa-sqlite-WASM** (`no such module: fts5`) → Migrations-Runner überspringt FTS-Statements per Compile-Option-Check, `core/search` degradiert auf Web zu Vector-only (`hasFtsTables`).
+- **Datei-Brücke (M10):** `core/export/backup.ts` (JSON-Backup aller 20 portablen Tabellen, Spalten gegen PRAGMA gehärtet, Werte als Parameter; ohne Transaktion — **drizzle-Transaktionen hängen auf Web**, Sync-Only-Treiber); Share nativ via expo-sharing, Web via Blob-Download + File-Input; „Daten (lokal)"-Sektion im Mehr-Tab (Export JSON/Vault nativ + Web, Import vorerst Web-only).
+- **E2E-Brücke verifiziert:** Backup vom Emulator (64 Entities + settings) → Import auf Web: **„Importiert: 65 Zeilen in 7 Tabellen"**, danach „5 Karten fällig" im Wissen-Tab. Wichtigster Fix dabei: Import-Schreiben über **rohen SqliteExecutor** (`getRawDb()`) — drizzles Sync-Treiber hängt auf Web in Sequenzen.
+- **Read-only-Modus (WebGPU-Gate):** `core/platform/webgpu.ts` (`hasWebGPU()` + Hint-Text); ModelSection zeigt ohne WebGPU den Fallback-Hinweis statt Modellverwaltung, Analyse-CTA ebenso. In Chrome (headless, `navigator.gpu: true`) erscheint korrekt die normale Modellverwaltung.
+
+**Befunde (für später):** drizzle/expo-sqlite ist durchgehend sync-basiert (`executeSync`) — auf Web geht das über den SAB-Pfad und hängt in Sequenzen/Transaktionen; rohe async Calls sind stabil. Web-Screens, die viele drizzle-Schreibzugriffe machen (Sync-Push, Settings), brauchen denselben Raw-Pfad, falls sie auf Web laufen sollen.
+
+**Offen (Phase-11-Rest, ehrlich):** WebLLMEngine (mlc) + transformers.js-Embeddings für volle lokale KI im Browser (dazwischen funktioniert **Cloud-Analyse auf Web schon heute** — `resolveAnalysisEngine` ist reines REST); Graph mit echten `note_links` verifizieren (Backup-Datensatz hatte 0 Links — Graph-View selbst rendert auf Web); Sidebar-Layout-Polish, Tastaturkürzel `/`, Drag-Scroll-Rails, SpeechSynthesis-TTS im Guide-Modus; Safari-Verifikation des Read-only-Hinweises; Vault-ZIP-Import (nur Export); Web-Persistenz der Modelldownloads (Cache-API) gehört zur WebLLM-Story.
+
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
 1. Takeout-Import des historischen Verlaufs — Entscheidung nach erster Nutzung (eingeplant als Could in Phase 10).
@@ -351,9 +364,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
 10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
 
-## Nächste Schritte (Phase 10.5 — Fortsetzung)
+## Nächste Schritte (Phase 11 — Rest & Phase 12)
 
-1. **User:** kimi-Neustart (MCPs), Blaze-Upgrade dev, `gcloud auth login` — dann Google-Provider in Firebase Auth aktivieren (MCP/Console/API).
-2. Functions deployen, Pro-Sektion im Mehr-Tab + Engine-Auswahl hinter Entitlement.
-3. RevenueCat via MCP (Projekt, App, Entitlement `pro`, Test-Store-Key) + `react-native-purchases` einbauen (nativer Rebuild Android/iOS).
-4. Golden-Set-Benchmark Gemini → Modell-Pinning; E2E-Sync-Verifikation zwei Geräte; erst danach Docs-Exit-Kriterien abhaken.
+1. **WebLLMEngine + Web-Embeddings** (mlc/transformers.js) für volle lokale KI im Browser; dazwischen Cloud-Analyse auf Web nutzen (REST-Pfad existiert). Achtung bei Web-Schreibpfaden: drizzle-Sync hängt → Raw-Executor-Muster (`getRawDb`) verwenden.
+2. Graph mit link-haltigem Bestand verifizieren; Sidebar/Tastaturkürzel/Scroll-Rails Polish; SpeechSynthesis-TTS.
+3. **User-Verifikation gewünscht:** Import im eigenen (eingeloggten) Chrome einmal durchklicken — der Headless-Flow ist verifiziert, der reale Google-Sign-in-Pfad auf Web war es schon (Phase 1).
+4. Phase 12 (Apple TV) erst nach Web-Parität bzw. nach User-Prio; iOS-Kauf-Verifikation (10.5) weiter offen.

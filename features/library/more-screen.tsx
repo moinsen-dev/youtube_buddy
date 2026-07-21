@@ -8,6 +8,7 @@ import { getDb } from '@/core/db';
 import { getSetting, setSetting } from '@/core/db/repositories';
 import { useTheme } from '@/core/theme';
 import { useAuth } from '@/features/auth/auth-context';
+import { DataSection } from '@/features/library/data-section';
 import { ModelSection } from '@/features/library/model-section';
 import { QuotaMeter } from '@/features/library/quota-meter';
 import { ProSection } from '@/features/pro/pro-section';
@@ -144,6 +145,8 @@ export function MoreScreen() {
       </View>
 
       <QuotaMeter />
+
+      <DataSection />
 
       <Text style={[theme.typography.caption, { color: theme.colors.textTertiary }]}>
         YouTube Buddy v{version} · Local-only · Daten bleiben auf diesem Gerät

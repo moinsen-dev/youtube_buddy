@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/core/theme';
+import { hasWebGPU, WEBGPU_FALLBACK_HINT } from '@/core/platform/webgpu';
 
 import { AnalysisSheet } from './analysis-sheet';
 import { ChapterList } from './chapter-list';
@@ -38,7 +39,9 @@ export function AnalysisSection({
     analysis.status === 'ready' && analysis.summary != null && analysis.chapters != null;
 
   const ctaHint = !analysis.engineReady
-    ? 'Erst ein Modell im Mehr-Tab laden.'
+    ? Platform.OS === 'web' && !hasWebGPU()
+      ? WEBGPU_FALLBACK_HINT
+      : 'Erst ein Modell im Mehr-Tab laden.'
     : !unlocked
       ? 'Verfügbar ab 30 % geschaut.'
       : null;

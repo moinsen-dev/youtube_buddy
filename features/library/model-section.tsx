@@ -1,13 +1,15 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/core/theme';
+import { hasWebGPU, WEBGPU_FALLBACK_HINT } from '@/core/platform/webgpu';
 import type { ModelEntry } from '@/core/ai-engine/use-model-manager';
 import { useModelManager } from '@/core/ai-engine/use-model-manager';
 
 /**
  * Model management section for "Mehr" (M4, DESIGN 5.11): model rows with
  * size/RAM/status, download/load/delete actions, free storage, smoke test.
+ * On web without WebGPU this becomes the read-only hint (M10, phase 11).
  */
 export function ModelSection() {
   const theme = useTheme();
@@ -25,6 +27,29 @@ export function ModelSection() {
     abortSmokeTest,
     runBench,
   } = useModelManager();
+
+  if (Platform.OS === 'web' && !hasWebGPU()) {
+    return (
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.colors.bgElevated,
+            borderColor: theme.colors.lineSubtle,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.lg,
+          },
+        ]}
+      >
+        <Text style={[theme.typography.title3, { color: theme.colors.textPrimary }]}>
+          KI-Modelle (lokal)
+        </Text>
+        <Text style={[theme.typography.body, { color: theme.colors.textSecondary }]}>
+          {WEBGPU_FALLBACK_HINT}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View

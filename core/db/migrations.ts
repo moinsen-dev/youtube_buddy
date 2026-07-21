@@ -145,11 +145,21 @@ export async function runMigrations(
   const applied = await db.getAllAsync<{ id: string }>('SELECT id FROM __migrations');
   const done = new Set(applied.map((row) => row.id));
 
+  // expo-sqlite's wa-sqlite WASM build ships WITHOUT FTS5 ('no such module:
+  // fts5' on web, verified in phase 11) — FTS statements are skipped there
+  // and the search layer degrades to vector-only (core/search checks table
+  // existence). Native keeps full FTS5.
+  const fts5 = await supportsFts5(db);
+
   const newlyApplied: string[] = [];
   for (const migration of list) {
     if (done.has(migration.id)) continue;
     await db.withTransactionAsync(async () => {
       for (const statement of migration.statements) {
+        if (!fts5 && statement.includes('fts5')) {
+          console.log(`[db] skipping FTS5 statement (unsupported here): ${migration.id}`);
+          continue;
+        }
         await db.execAsync(statement);
       }
       await db.runAsync('INSERT INTO __migrations (id, applied_at) VALUES (?, ?)', [
@@ -160,4 +170,16 @@ export async function runMigrations(
     newlyApplied.push(migration.id);
   }
   return newlyApplied;
+}
+
+/** True when the SQLite build includes FTS5 (false on expo-sqlite web). */
+async function supportsFts5(db: SqliteExecutor): Promise<boolean> {
+  try {
+    const rows = await db.getAllAsync<{ used: number }>(
+      `SELECT sqlite_compileoption_used('ENABLE_FTS5') AS used`,
+    );
+    return rows[0]?.used === 1;
+  } catch {
+    return false;
+  }
 }
