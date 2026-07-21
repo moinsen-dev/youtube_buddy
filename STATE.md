@@ -317,7 +317,9 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 5. ~~**Client-ID-Allowlist** (Cross-Projekt-Google-Identität)~~ ✅ — Web-Client-ID des YouTube-Projekts im Dev-Projekt allowlistet (Console-only, keine API).
 6. ~~**Vertex AI API aktivieren**~~ ✅ — danach **erster echter Gemini-Call verifiziert**: Cloud-Analyse des El-Niño-Videos via Emulator → `analyses` mit `summary`/`chapters`/`triage` je `gemini-2.5-flash (cloud)` + deutscher Zusammenfassung (Screenshot `.verification/phase105_cloud_analysis.png`); Function-Logs zeigen die Calls.
 
-**Offen für die Fortsetzung (nächste Session):** Pro-Sektion im Mehr-Tab (Sync aktivieren/beitreten/jetzt synchronisieren, Cloud-Opt-in-Toggle), Engine-Auswahl (CloudEngine hinter Entitlement), RevenueCat Dashboard (Projekt/App/Entitlement `pro` via MCP, Test-Store) + `react-native-purchases` (nativer Rebuild), Server-seitige Entitlement-Prüfung (ADR-Detail: RC-Webhook → Custom Claims), Golden-Set-Benchmark Gemini → Modell-Pinning, E2E-Verifikation zwei Geräte (Emulator + zweite Instanz), Takeout bleibt Could.
+**Offen für die Fortsetzung (nächste Session):** ~~Pro-Sektion im Mehr-Tab~~ ✅, ~~Engine-Auswahl~~ ✅, RevenueCat Dashboard (Projekt `proj9183eab2` angelegt; **Test-Store-App fehlt — ein Klick im Dashboard, nicht per API erzeugbar**: https://app.revenuecat.com/projects/proj9183eab2/apps → dann Entitlement `pro`, Produkte monthly/annual, Offering `default` + Packages + Public-Key per MCP fertig stellen), `react-native-purchases` eingebaut ✅ (Configure in `_layout.tsx`, Keys via `extra.revenuecat` aus `REVENUECAT_IOS_KEY`/`REVENUECAT_ANDROID_KEY`; nativer Rebuild läuft), Paywall-Ansicht in der Pro-Sektion, Server-seitige Entitlement-Prüfung (ADR-Detail: RC-Webhook → Custom Claims), Golden-Set-Benchmark Gemini → Modell-Pinning, E2E-Verifikation zwei Geräte (Emulator + zweite Instanz), Takeout bleibt Could.
+
+**RevenueCat-MCP:** OAuth abgeschlossen (Tokens in `~/.mcp-auth/mcp-remote-0.1.36/`); in dieser Session per stdio-Einmal-Client (`/tmp/mcp-call.mjs`) nutzbar, ab nächster Session nativ geladen.
 
 **Verifiziert auf dem Emulator (2026-07-21):**
 
