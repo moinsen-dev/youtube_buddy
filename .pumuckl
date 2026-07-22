@@ -1,0 +1,53 @@
+{
+  "git" : {
+    "current_branch" : "develop",
+    "github_url" : "https:\/\/github.com\/moinsen-dev\/youtube_buddy",
+    "has_uncommitted_changes" : true,
+    "is_repo" : true,
+    "last_commit_author" : "Ulrich Diedrichsen",
+    "last_commit_date" : "2026-07-21T14:05:39Z",
+    "last_commit_message" : "docs(state): web login + screens verified by user",
+    "stale_days" : 0,
+    "total_commits" : 34,
+    "uncommitted_files_count" : 1
+  },
+  "last_scanned" : "2026-07-22T11:40:13Z",
+  "project_path" : "\/Users\/udi\/work\/moinsen\/ideas\/youtube_buddy",
+  "pumuckl_version" : 1,
+  "report" : {
+    "accent" : "#E53935",
+    "ai_note" : "Die Planung sitzt – README, STATE.md, ROADMAP – jetzt wartet das erste echte App-Code auf dich!",
+    "ai_suggestion" : "Starte Phase 0 aus der ROADMAP: Expo-Projekt initialisieren, Dependencies installieren, entweder das Datenmodell mit Drizzle anlegen oder die erste leere Screen-Struktur aufziehen.",
+    "effort_to_complete" : 20,
+    "impact" : 50,
+    "overall_gem_score" : 70,
+    "progress" : 15,
+    "re_entry_action" : "Phase 0 starten: Expo-Projekt initialisieren, Dependencies installieren, Basisstruktur (Navigation, Datenbank, erster Screen) anlegen",
+    "re_entry_effort" : "~3h",
+    "re_entry_why" : "Repo ist top vorbereitet, alle Planungsdokumente liegen bereit und warten auf den ersten Commits mit App-Code.",
+    "recency" : 100,
+    "resumption_ease" : 95,
+    "vision" : "Aus passivem YouTube-Konsum verarbeitbares Wissen machen – lokal, privat, mit KI auf dem Gerät."
+  },
+  "scan" : {
+    "fast" : {
+      "at" : "2026-07-22T08:12:04Z",
+      "head" : "ddb80b9",
+      "mtime" : 1784642723.5174928
+    },
+    "git" : {
+      "at" : "2026-07-22T11:40:13Z",
+      "head" : "ddb80b9",
+      "mtime" : 1784642723.5174928
+    }
+  },
+  "scoring" : {
+    "ai_note" : "Die Planung sitzt – README, STATE.md, ROADMAP – jetzt wartet das erste echte App-Code auf dich!",
+    "ai_suggestion" : "Starte Phase 0 aus der ROADMAP: Expo-Projekt initialisieren, Dependencies installieren, entweder das Datenmodell mit Drizzle anlegen oder die erste leere Screen-Struktur aufziehen.",
+    "effort_to_complete" : 20,
+    "impact" : 50,
+    "overall_gem_score" : 70,
+    "progress" : 15,
+    "recency" : 100
+  }
+}

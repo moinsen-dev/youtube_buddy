@@ -1,6 +1,6 @@
 import { getRandomBytes } from 'expo-crypto';
+import { scrypt } from '@noble/hashes/scrypt.js';
 import { secretbox } from 'tweetnacl';
-import { scrypt } from 'scrypt-js';
 
 /**
  * E2E crypto for Pro-Sync (ADR PRD §7.6): the server is blind.
@@ -44,7 +44,10 @@ export function normalizeRecoveryCode(input: string): string {
 async function deriveWrapKey(code: string, salt: Uint8Array): Promise<Uint8Array> {
   const { N, r, p, dkLen } = SCRYPT_PARAMS;
   const password = new TextEncoder().encode(normalizeRecoveryCode(code));
-  return scrypt(password, salt, N, r, p, dkLen);
+  // @noble/hashes: scrypt-js computes a WRONG key on iOS-Hermes (identical
+  // inputs, divergent output — verified on device; node/Android fine).
+  // noble matches the reference on every platform we tested.
+  return scrypt(password, salt, { N, r, p, dkLen });
 }
 
 /**

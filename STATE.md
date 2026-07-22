@@ -327,7 +327,27 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 | Free-Nutzer ohne Pro: keinerlei Server-Traffic                                | ✅ By Design + Fix: Purchases konfiguriert NICHT mehr beim App-Start (sonst Traffic für alle); Firebase-Calls erst nach explizitem Connect; RC erst beim Öffnen der Pro-Sektion                                                                                                                                                                                                                                                               |
 | Kein Crashlytics/Analytics                                                    | ✅ weder SDK in der App noch MCP-Scope (`--only auth,firestore,storage`)                                                                                                                                                                                                                                                                                                                                                                      |
 
-**Restpunkte (ehrlich offen):** iOS-Kauf-Verifikation (Rebuild), Golden-Set-Benchmark für das Gemini-Pinning (Function akzeptiert `model`-Param, `gemini-2.5-flash` vorerst gesetzt), Server-seitige Entitlement-Prüfung (RC-Webhook → Custom Claims, ADR-Detail), prod-Setup (Web-App registrieren, prod-Rules, App Check).
+**Restpunkte (ehrlich offen):** ~~iOS-Kauf-Verifikation~~ ✅ (2026-07-22, s. unten), Golden-Set-Benchmark für das Gemini-Pinning (Function akzeptiert `model`-Param, `gemini-2.5-flash` vorerst gesetzt), Server-seitige Entitlement-Prüfung (RC-Webhook → Custom Claims, ADR-Detail), prod-Setup (Web-App registrieren, prod-Rules, App Check).
+
+## iOS-Verifikation (2026-07-22, iPhone 17 Pro Simulator, iOS 27)
+
+**Vorgeschichte:** Der iOS-Dev-Client war seit Phase 1 nie neu gebaut worden (`Cannot find native module 'ExpoSQLite'` beim Start, Metro stürzte ab) — Rebuild via `pod install` (jetzt auch react-native-purchases in den Pods) + `expo run:ios`, danach Google-Consent durch den User.
+
+**Verifiziert (Treiber: idb für Taps/Swipes/a11y, Maestro-Flows für Text-basierte Flows und System-Dialoge):**
+
+| Schritt                | Beleg                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YouTube-Sync           | ✅ 2 Abos geladen (Babish, sportstudio; WL bleibt 0 — bekannter Viewer-Account-Befund)                                                                                                                                                                                                                                                                |
+| Firebase-Connect       | ✅ gleiche uid `ww3QeMHF…` wie Android/Web (Cross-Projekt-Identität)                                                                                                                                                                                                                                                                                  |
+| Join per Recovery-Code | ✅ **nach Root-Cause-Fix: scrypt-js liefert auf iOS-Hermes einen FALSCHEN Key** (identische Inputs salt+code+params, Output `61,202,…` statt Referenz `204,114,…`; node + Android-Hermes + Jest korrekt) → Wechsel auf **@noble/hashes/scrypt** (auf allen Plattformen referenz-korrekt), scrypt-js deinstalliert. Blob entschlüsselt: `open → ok 32` |
+| E2E-Sync Pull          | ✅ „2 hochgeladen · 62 übernommen · 2 lokal neuer" (die 2 = eigene YouTube-Kanäle) — Screenshots `.verification/phase105_ios_*.png`                                                                                                                                                                                                                   |
+| Inhalte sichtbar       | ✅ Wissen-Tab: 8 Karten fällig, 12 Konzepte, Notizen (trip/summary/concepts)                                                                                                                                                                                                                                                                          |
+| Kauf-Flow (Test Store) | ✅ iOS-Testdialog (pro_monthly, 4,99 US$) → „Test valid purchase" → **„Pro aktiv (TEST_STORE)"** — damit ist das ROADMAP-Kriterium „Kauf auf zwei Plattformen" erfüllt (Android + iOS)                                                                                                                                                                |
+| Paywall/Offerings      | ✅ Preise direkt aus RC geladen (39,99/4,99 US$)                                                                                                                                                                                                                                                                                                      |
+
+**Werkzeug-Merksätze:** idb `ui tap` erwartet POINTS (nicht Pixel, ÷3); die expo-dev-client-FAB (Gear) liegt über Buttons und öffnet bei Fehltreffern das Dev-Menü — per Swipe an den Rand ziehen; `idb ui text` tippt über das DE-Tastaturlayout (`-` → `ß`, teils `SS`) → Codes ohne Sonderzeichen tippen oder per `simctl pbcopy` + Paste; iOS-Tabs in Maestro per Label-Regex `.*tab, N of 5.*` ansteuern (plain „Wissen" findet Maestro nicht); idb-Companion und Maestro-Driver sterben nach `simctl terminate` und brauchen Neustart.
+
+**Offen auf iOS:** Embedding-Modell-Download + semantische Suche (Kette auf Android verifiziert, iOS aus Zeitgründen nicht wiederholt), Guide-Modus TTS (expo-speech im Rebuild enthalten, nicht getestet), Karten/Guide-Erzeugung via Cloud-Pfad (REST — sollte wie auf Web laufen).
 
 **Verifiziert auf dem Emulator (2026-07-21):**
 
@@ -359,7 +379,7 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 4. Konzept-Dedup-Qualität — **erste Evidenz gut** (6 saubere Konzepte); Golden-Set-Gate bei Dedup-Pfad ausstehend; ggf. Embedding-Clustering in Phase 9.
 5. Datentransfer Phone → TV — **per ADR gelöst ab Phase 10.5** (E2E-Sync via Firebase).
 6. **Android-Perf + P50-Analysezeit auf physischem Gerät** — Emulator-Artefakte.
-7. **iOS-Verifikation Phase 5–8** — expo-speech-Rebuild + Consent-Tap ausstehend.
+7. ~~**iOS-Verifikation Phase 5–8**~~ — **erledigt 2026-07-22** (Rebuild + Sync + Wissen-Inhalte + Kauf-Flow, s. Abschnitt oben); TTS/Guide-Modus und Embedding-Suche auf iOS als Rest offen.
 8. **WL-Playlist bei Viewer-Accounts** — ADR-Entscheidung (s. Phase 5).
 9. **Triage-Prompt-Kalibrierung** (Scores zu streng) — Golden-Set-Gate später.
 10. **Graph-Benchmark 1.000 Nodes** — mit wachsendem Bestand nachholen.
