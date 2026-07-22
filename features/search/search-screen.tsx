@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sql } from 'drizzle-orm';
@@ -44,6 +44,21 @@ export function SearchScreen() {
   const router = useRouter();
 
   const [query, setQuery] = useState('');
+  const inputRef = useRef<TextInput>(null);
+
+  // Keyboard shortcut '/' focuses the search field (web only, DESIGN M10).
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== '/') return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
   const [filter, setFilter] = useState<Filter>('all');
   const [results, setResults] = useState<ResultItem[]>([]);
   const [searching, setSearching] = useState(false);
@@ -226,6 +241,7 @@ export function SearchScreen() {
         <>
           <View style={styles.searchRow}>
             <TextInput
+              ref={inputRef}
               value={query}
               onChangeText={setQuery}
               onSubmitEditing={() => void runSearch()}

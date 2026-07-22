@@ -1,12 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as Speech from 'expo-speech';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { HowtoV1Output } from '@/core/ai-engine/prompts/howto.v1';
 import { getDb } from '@/core/db';
 import { getGuide, updateGuideProgress, type GuideRow } from '@/core/db/repositories';
+import * as Speech from '@/core/platform/speech';
 import { useTheme } from '@/core/theme';
 
 import { formatTimestamp } from '@/features/analysis/chapter-list';
