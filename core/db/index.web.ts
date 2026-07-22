@@ -49,13 +49,25 @@ async function openAndMigrate(): Promise<ExpoSQLiteDatabase<typeof schema>> {
     const proxy = drizzleProxy(
       async (sqlText, params, method) => {
         if (method === 'run') {
-          await sqlite!.runAsync(sqlText, params);
-          return { rows: [] as unknown[][] };
+          const result = await sqlite!.runAsync(sqlText, params);
+          // drizzle consumers expect changes/lastInsertRowId (repositories
+          // read result.lastInsertRowId after inserts).
+          return {
+            rows: [] as unknown[][],
+            changes: result.changes,
+            lastInsertRowId: result.lastInsertRowId,
+          };
         }
-        // positional rows (mapResultRow indexes by field order)
-        const rows = await sqlite!
-          .sql([sqlText] as unknown as TemplateStringsArray, ...params)
-          .values();
+        const rawRows = await sqlite!.getAllAsync<Record<string, unknown>>(sqlText, params);
+        // Hybrid row shape: positional array with named props attached.
+        // drizzle's mapResultRow needs numeric indices (query builder),
+        // while raw db.all(sql`…`) consumers in this codebase read named
+        // fields (core/search, hygiene stats). Arrays accept both.
+        const rows = rawRows.map((row) => {
+          const hybrid = Object.values(row) as unknown[];
+          Object.assign(hybrid, row);
+          return hybrid;
+        });
         return { rows };
       },
       { schema },

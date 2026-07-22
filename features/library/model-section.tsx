@@ -5,6 +5,7 @@ import { useTheme } from '@/core/theme';
 import { hasWebGPU, WEBGPU_FALLBACK_HINT } from '@/core/platform/webgpu';
 import type { ModelEntry } from '@/core/ai-engine/use-model-manager';
 import { useModelManager } from '@/core/ai-engine/use-model-manager';
+import { WebModelSection } from './web-model-section';
 
 /**
  * Model management section for "Mehr" (M4, DESIGN 5.11): model rows with
@@ -28,27 +29,31 @@ export function ModelSection() {
     runBench,
   } = useModelManager();
 
-  if (Platform.OS === 'web' && !hasWebGPU()) {
-    return (
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.colors.bgElevated,
-            borderColor: theme.colors.lineSubtle,
-            borderRadius: theme.radius.lg,
-            padding: theme.spacing.lg,
-          },
-        ]}
-      >
-        <Text style={[theme.typography.title3, { color: theme.colors.textPrimary }]}>
-          KI-Modelle (lokal)
-        </Text>
-        <Text style={[theme.typography.body, { color: theme.colors.textSecondary }]}>
-          {WEBGPU_FALLBACK_HINT}
-        </Text>
-      </View>
-    );
+  if (Platform.OS === 'web') {
+    // WebGPU: WebLLM lifecycle; without it the documented read-only hint.
+    if (!hasWebGPU()) {
+      return (
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.bgElevated,
+              borderColor: theme.colors.lineSubtle,
+              borderRadius: theme.radius.lg,
+              padding: theme.spacing.lg,
+            },
+          ]}
+        >
+          <Text style={[theme.typography.title3, { color: theme.colors.textPrimary }]}>
+            KI-Modelle (lokal)
+          </Text>
+          <Text style={[theme.typography.body, { color: theme.colors.textSecondary }]}>
+            {WEBGPU_FALLBACK_HINT}
+          </Text>
+        </View>
+      );
+    }
+    return <WebModelSection />;
   }
 
   return (

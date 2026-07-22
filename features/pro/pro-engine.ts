@@ -3,6 +3,8 @@ import { getEngine, peekEngine } from '@/core/ai-engine/engine-instance';
 import type { LLMEngine } from '@/core/ai-engine/types';
 import { getSetting } from '@/core/db/repositories';
 import type { Db } from '@/core/db/repositories';
+import { hasWebGPU, WEBGPU_FALLBACK_HINT } from '@/core/platform/webgpu';
+import { Platform } from 'react-native';
 
 import { getFirebaseConfig, ProSession, createSecureStorage } from './pro-session';
 
@@ -55,6 +57,21 @@ export async function resolveAnalysisEngine(db: Db): Promise<ResolvedEngine | { 
       };
     }
     // Opt-in without a session: fall through to local with a clear note.
+  }
+
+  // Web: WebGPU + WebLLM (phase 11). Without WebGPU the app is read-only.
+  if (Platform.OS === 'web') {
+    if (!hasWebGPU()) {
+      return { error: WEBGPU_FALLBACK_HINT };
+    }
+    const webLoadedId = peekEngine()?.loadedModelId;
+    if (!webLoadedId) {
+      return {
+        error:
+          'Kein Web-Modell geladen — im Mehr-Tab „Qwen3 4B (WebLLM)" laden (einmalig ~2,5 GB, bleibt im Browser-Cache).',
+      };
+    }
+    return { engine: await getEngine(), modelLabel: webLoadedId, isCloud: false };
   }
 
   const loadedId = peekEngine()?.loadedModelId;

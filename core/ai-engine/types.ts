@@ -82,9 +82,17 @@ export interface TranscriptResult {
 export interface LLMEngine {
   readonly id: EngineId;
   readonly capabilities: EngineCapabilities;
+  /** Currently loaded chat model (null before loadModel). */
+  readonly loadedModelId?: string | null;
 
   loadModel(spec: ModelSpec, onProgress?: (pct: number) => void): Promise<void>;
   unloadModel(): Promise<void>;
+
+  /** Embedding context lifecycle (M8) — engines with a separate embed model
+   * (llama.rn on native, transformers.js on web). */
+  readonly loadedEmbeddingModelId?: string | null;
+  loadEmbeddingModel?(spec: ModelSpec): Promise<void>;
+  unloadEmbeddingModel?(): Promise<void>;
 
   generate<T>(req: GenerateRequest<T>): Promise<GenerateResult<T>>;
   embed(texts: string[]): Promise<Float32Array[]>;

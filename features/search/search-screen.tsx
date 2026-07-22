@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sql } from 'drizzle-orm';
 
@@ -62,6 +62,14 @@ export function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const checkPrereqs = useCallback(async () => {
+    // Web: transformers.js caches internally — there is no FileSystem
+    // download step like on native (phase 11).
+    if (Platform.OS === 'web') {
+      setModelState(
+        peekEngine()?.loadedEmbeddingModelId === EMBEDDING_MODEL_SPEC.id ? 'loaded' : 'missing',
+      );
+      return;
+    }
     setModelState(
       peekEngine()?.loadedEmbeddingModelId === EMBEDDING_MODEL_SPEC.id
         ? 'loaded'
@@ -80,6 +88,18 @@ export function SearchScreen() {
   const prepareModel = useCallback(async () => {
     setError(null);
     try {
+      // Web: transformers.js downloads + caches the ONNX model itself
+      // (phase 11) — no expo-file-system involved.
+      if (Platform.OS === 'web') {
+        setModelState('downloading');
+        const engine = await getEngine();
+        if (!engine.loadEmbeddingModel) {
+          throw new Error('Diese Engine unterstützt keine Embedding-Modelle');
+        }
+        await engine.loadEmbeddingModel(EMBEDDING_MODEL_SPEC);
+        setModelState('loaded');
+        return;
+      }
       if ((await isModelDownloaded(EMBEDDING_MODEL_SPEC)) == null) {
         setModelState('downloading');
         const result = await downloadModel(EMBEDDING_MODEL_SPEC, (pct) => setDownloadPct(pct));
@@ -91,6 +111,9 @@ export function SearchScreen() {
       }
       setModelState('downloaded');
       const engine = await getEngine();
+      if (!engine.loadEmbeddingModel) {
+        throw new Error('Diese Engine unterstützt keine Embedding-Modelle');
+      }
       await engine.loadEmbeddingModel(EMBEDDING_MODEL_SPEC);
       setModelState('loaded');
     } catch (cause) {

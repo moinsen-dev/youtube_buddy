@@ -1,22 +1,30 @@
-import type { LlamaCppEngine } from './llama-cpp-engine';
+import { Platform } from 'react-native';
+
+import type { LLMEngine } from './types';
 
 /**
- * Shared engine singleton (M4/M5): exactly one model is loaded device-wide.
- * Created lazily — llama.rn is native-only, so a static import would break
- * the web bundle. On web the instance is never created and callers that need
- * generation must surface a "model required" state.
+ * Shared engine singleton (M4/M5/M10): exactly one chat model is loaded
+ * device-wide. Platform-resolved: llama.rn (LlamaCppEngine) on native,
+ * WebLLMEngine (WebGPU) in the browser. Both are created lazily — llama.rn
+ * is native-only, WebLLM is web-only, so static imports would break the
+ * other platform's bundle.
  */
-let engine: LlamaCppEngine | null = null;
+let engine: LLMEngine | null = null;
 
-export async function getEngine(): Promise<LlamaCppEngine> {
+export async function getEngine(): Promise<LLMEngine> {
   if (!engine) {
-    const { LlamaCppEngine } = await import('./llama-cpp-engine');
-    engine = new LlamaCppEngine();
+    if (Platform.OS === 'web') {
+      const { WebLLMEngine } = await import('./web-llm-engine');
+      engine = new WebLLMEngine();
+    } else {
+      const { LlamaCppEngine } = await import('./llama-cpp-engine');
+      engine = new LlamaCppEngine();
+    }
   }
   return engine;
 }
 
-/** Null on web / before first use — for read-only status checks. */
-export function peekEngine(): LlamaCppEngine | null {
+/** Null before first use — for read-only status checks. */
+export function peekEngine(): LLMEngine | null {
   return engine;
 }
