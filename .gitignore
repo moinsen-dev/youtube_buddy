@@ -55,3 +55,6 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .firebase/
+
+# external tooling writes repo metadata here
+.pumuckl
