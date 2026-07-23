@@ -1,0 +1,53 @@
+{
+  "git" : {
+    "current_branch" : "develop",
+    "github_url" : "https:\/\/github.com\/moinsen-dev\/youtube_buddy",
+    "has_uncommitted_changes" : true,
+    "is_repo" : true,
+    "last_commit_author" : "Ulrich Diedrichsen",
+    "last_commit_date" : "2026-07-22T19:47:23Z",
+    "last_commit_message" : "feat(web): tts via speechsynthesis + slash shortcut (phase 11 rest)",
+    "stale_days" : 0,
+    "total_commits" : 38,
+    "uncommitted_files_count" : 1
+  },
+  "last_scanned" : "2026-07-23T06:01:59Z",
+  "project_path" : "\/Users\/udi\/work\/moinsen\/ideas\/youtube_buddy",
+  "pumuckl_version" : 1,
+  "report" : {
+    "accent" : "#FF6B35",
+    "ai_note" : "Toll, du hast Phase 11 fast abgeschlossen – nur noch eine Etappe bis zum Ziel!",
+    "ai_suggestion" : "Setze direkt mit Phase 12 der ROADMAP fort: letzte Funktionen, Tests, und Launch-Vorbereitung.",
+    "effort_to_complete" : 20,
+    "impact" : 75,
+    "overall_gem_score" : 82,
+    "progress" : 85,
+    "re_entry_action" : "Schließe Phase 12 der ROADMAP ab (letzte Phase vor dem ersten Launch).",
+    "re_entry_effort" : "~4–6h",
+    "re_entry_why" : "Nur noch eine Phase fehlt, das Projekt ist fast fertig und die Doku ist top.",
+    "recency" : 100,
+    "resumption_ease" : 90,
+    "vision" : "Aus passivem YouTube-Konsum verarbeitbares Wissen machen – komplett auf dem Gerät."
+  },
+  "scan" : {
+    "fast" : {
+      "at" : "2026-07-23T04:16:08Z",
+      "head" : "6bee680",
+      "mtime" : 1784749551.8430653
+    },
+    "git" : {
+      "at" : "2026-07-23T06:01:59Z",
+      "head" : "6bee680",
+      "mtime" : 1784749551.8430653
+    }
+  },
+  "scoring" : {
+    "ai_note" : "Toll, du hast Phase 11 fast abgeschlossen – nur noch eine Etappe bis zum Ziel!",
+    "ai_suggestion" : "Setze direkt mit Phase 12 der ROADMAP fort: letzte Funktionen, Tests, und Launch-Vorbereitung.",
+    "effort_to_complete" : 20,
+    "impact" : 75,
+    "overall_gem_score" : 82,
+    "progress" : 85,
+    "recency" : 100
+  }
+}

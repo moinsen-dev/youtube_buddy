@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 import {
   refreshFirebaseIdentity,
@@ -48,6 +49,21 @@ const REFRESH_MARGIN_MS = 60 * 1000;
 
 /** Loads expo-secure-store lazily (native-only import, web-safe). */
 export async function createSecureStorage(): Promise<SecretStorage> {
+  if (Platform.OS === 'web') {
+    // Web: expo-secure-store has no implementation ('getValueWithKeyAsync is
+    // not a function', verified on web phase 11). localStorage is plain text
+    // — acceptable for the dev environment; the E2E master key should be
+    // treated as native-only until a WebCrypto-wrapped storage lands.
+    return {
+      getItem: async (key) => Promise.resolve(localStorage.getItem(key)),
+      setItem: async (key, value) => {
+        localStorage.setItem(key, value);
+      },
+      deleteItem: async (key) => {
+        localStorage.removeItem(key);
+      },
+    };
+  }
   const SecureStore = await import('expo-secure-store');
   return {
     getItem: (key) => SecureStore.getItemAsync(key),
