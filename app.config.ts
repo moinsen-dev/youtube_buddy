@@ -29,6 +29,12 @@ const FIREBASE_CONFIGS: Record<string, FirebaseEnvConfig> = {
     appId: '1:732512553008:web:dc1ac8c2404152cecb05f5',
     analyzeUrl: 'https://europe-west3-youtube-buddy-moinsen-dev.cloudfunctions.net/analyze',
   },
+  production: {
+    projectId: 'youtube-buddy-moinsen',
+    apiKey: 'AIzaSyDdo3glIJd_ve46si9IjRoccPd0NFkc3rQ',
+    appId: '1:870515903914:web:3bbaadddf79b3020022fd3',
+    analyzeUrl: 'https://europe-west3-youtube-buddy-moinsen.cloudfunctions.net/analyze',
+  },
 };
 
 export default ({ config }: ConfigContext): ExpoConfig => ({

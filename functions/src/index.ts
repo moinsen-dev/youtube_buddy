@@ -15,7 +15,10 @@ import { onRequest } from 'firebase-functions/v2/https';
  */
 
 const REGION = 'europe-west3';
-// Pinned after the golden-set benchmark (ROADMAP phase 10.5 exit criteria).
+// Pinned by the golden-set benchmark (2026-07-23, phase 10.5 exit criteria):
+// 10/10 schema-valid via scripts/benchmark-cloud.ts. flash-lite/2.0-flash/
+// 2.5-pro are NOT available in europe-west3 (Vertex 404) — 2.5-flash is the
+// only candidate that serves the EU region.
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 initializeApp();

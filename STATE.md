@@ -3,7 +3,7 @@
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
 **Stand:** 2026-07-21
-**Aktuelle Phase:** **Phase 11 (Web-KI & Web-Polish) — Kern gelegt und vom User verifiziert ✅** (Web-Login + Screens + DB + Datei-Brücke; Rest WebLLM/Parität offen) → Details unten
+**Aktuelle Phase:** **Phase 11 (Web-KI & Web-Polish) — abgeschlossen ✅** (Web-Login + Screens + DB + Datei-Brücke + WebLLM-Analyse + TTS im Browser verifiziert; nur Nebenkriterien offen) → Details unten
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -327,7 +327,20 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 | Free-Nutzer ohne Pro: keinerlei Server-Traffic                                | ✅ By Design + Fix: Purchases konfiguriert NICHT mehr beim App-Start (sonst Traffic für alle); Firebase-Calls erst nach explizitem Connect; RC erst beim Öffnen der Pro-Sektion                                                                                                                                                                                                                                                               |
 | Kein Crashlytics/Analytics                                                    | ✅ weder SDK in der App noch MCP-Scope (`--only auth,firestore,storage`)                                                                                                                                                                                                                                                                                                                                                                      |
 
-**Restpunkte (ehrlich offen):** ~~iOS-Kauf-Verifikation~~ ✅ (2026-07-22, s. unten), Golden-Set-Benchmark für das Gemini-Pinning (Function akzeptiert `model`-Param, `gemini-2.5-flash` vorerst gesetzt), Server-seitige Entitlement-Prüfung (RC-Webhook → Custom Claims, ADR-Detail), prod-Setup (Web-App registrieren, prod-Rules, App Check).
+**Restpunkte (ehrlich offen):** ~~iOS-Kauf-Verifikation~~ ✅ (2026-07-22, s. unten), ~~Golden-Set-Benchmark für das Gemini-Pinning~~ ✅ (2026-07-23, s. Abschnitt unten), Server-seitige Entitlement-Prüfung (RC-Webhook → Custom Claims, ADR-Detail), prod-Setup (Web-App ✅ registriert + Config in `app.config.ts`; ausstehend: prod-Deploy Rules+Function, App-Check-Entscheidung).
+
+## Cloud-Benchmark & Gemini-Pinning (2026-07-23, abgeschlossen)
+
+**Golden-Set-Lauf gegen die deployed `analyze`-Function** (`scripts/benchmark-cloud.ts`, summarize.v1 über alle 10 Golden-Set-Videos, zod-validiert; Auth via Google-Access-Token der Web-Session → Identity Toolkit — der firebase-tools-Token scheitert mit „audience is not for this project", der gcloud-Token ist wegen Reauth-Prompt nicht nicht-interaktiv nutzbar):
+
+| Modell                                                           | valid             | Ø Dauer | Ø Tokens  | Befund                                                      |
+| ---------------------------------------------------------------- | ----------------- | ------- | --------- | ----------------------------------------------------------- |
+| **gemini-2.5-flash**                                             | **10/10 (100 %)** | ~5–6 s  | ~2,1–2,3k | ✅ einziger Kandidat, der in **europe-west3** verfügbar ist |
+| gemini-2.5-flash-lite / gemini-2.0-flash(-lite) / gemini-2.5-pro | 0/10              | —       | —         | Vertex 404 „model not found in europe-west3"                |
+
+**Entscheidung:** `DEFAULT_MODEL = 'gemini-2.5-flash'` final gepinnt (`functions/src/index.ts`, Kommentar + Artefakt `.verification/phase105_cloud_benchmark.json`). Qualität vs. On-Device: Golden-Set-Sample („Die Mikrowelt ist voller brutaler Super-Räuber…") deutlich reichhaltiger als die dünnen On-Device-Summaries aus Phase 4 — konsistent mit dem El-Niño-Vergleich oben.
+
+**Prod-Setup (2026-07-23):** Web-App im Prod-Projekt `youtube-buddy-moinsen` registriert (`1:870515903914:web:3bbaadddf79b3020022fd3`), `FIREBASE_CONFIGS.production` in `app.config.ts` (aktiv via `EXPO_PUBLIC_ENV=production`; Default bleibt development). **Firestore-Rules + Indexes nach prod deployed ✅** (owner-only, identisch zu dev — MCP-verifiziert). **Function-Deploy nach prod blockiert:** Prod-Projekt ist nicht auf Blaze (Pay-as-you-go) — `artifactregistry`/`cloudfunctions` lassen sich nicht enablen → **User-Aktion:** Upgrade unter https://console.firebase.google.com/project/youtube-buddy-moinsen/usage/details, danach `firebase deploy --only functions --project production`. **App Check: v1 bewusst ohne** (User-Entscheidung 2026-07-23: persönliche App, Rules owner-only, Function auth-gated; erst bei öffentlichem Release). Offen: `eas.json`-Build-Profile mit `EXPO_PUBLIC_ENV` (Datei existiert noch nicht).
 
 ## iOS-Verifikation (2026-07-22, iPhone 17 Pro Simulator, iOS 27)
 
@@ -371,7 +384,7 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 **Offen (Phase-11-Rest, ehrlich):** ~~WebLLMEngine (mlc) + transformers.js-Embeddings~~ ✅ **gebaut + im Browser verifiziert (2026-07-22, headful Chrome, Metal-WebGPU):** `WebLLMEngine` hinter `LLMEngine` (Chat Qwen3-4B-q4f16_1-MLC via @mlc-ai/web-llm, Embeddings paraphrase-multilingual-MiniLM via @xenova/transformers — @huggingface/transformers v4 scheitert am sharp-Build, quantized:false nötig da kein `model_quantized.onnx` im Repo); Engine-Instanz plattformbewusst (llama.rn nativ / WebLLM web); `WebModelSection` im Mehr-Tab; **Backup-Import 252 Zeilen/18 Tabellen**, **Embedding-Index 139 Items via transformers.js**, **Suche 114 ms**, **Wissensgraph mit 36 note_links gerendert** (50 SVG-Nodes). TTS via SpeechSynthesis-Facade (`core/platform/speech(.web).ts`, Guide-Modus verdrahtet), Tastaturkürzel `/` fokussiert Suche. **Parallel-Entwicklung zweier Expo-Apps:** zweiter Dev-Server auf **Port 8082** (`npx expo start --port 8082`), anderer Sim (iPhone 17 Pro Max statt belegtem Pro) — beide Server/Apps koexistieren (Launcher zeigt beide). Sidebar existierte schon (SideNav rail/sidebar via useBreakpoint).
 
-**Rest offen:** WebLLM `generate()` (Qwen3-Analyse im Browser — Modell lädt, Generation läuft in Verifikation), Safari-Verifikation des Read-only-Hinweises, Drag-Scroll-Rails, Vault-ZIP-Import (nur Export), WebLLM-Analyse-Sheet-Verhalten bei Tab-Wechsel (Engine-Singleton überlebt keinen Full-Reload — Test-Flows müssen SPA-intern navigieren).
+**Rest offen:** ~~WebLLM `generate()`~~ ✅ **verifiziert (2026-07-22):** Qwen3-Analyse lief komplett im Browser durch (Sheet „Modell: Qwen3 4B Instruct (Q4)", Ergebnis Triage „Lohnt sich: 2/5 · Unterhaltung" + Zusammenfassung + Kapitel, aus Web-DB persistiert und nach Reload geladen; Screenshot `.verification/phase11_webllm_analysis.png`). ~~TTS~~ ✅ **verifiziert:** Guide-Modus (Sourdough-Guide aus Import, Schritt 3/5) → 🔊-TTS spricht via SpeechSynthesis (`speechSynthesis.speaking === true`; Achtung: synthetische `el.click()`-Events gelten nicht als User-Gesture — Verifikation braucht CDP `Input.dispatchMouseEvent`). **SecureStore-Web-Fix (12cfa86) verifiziert:** der auf der Video-Seite sichtbare Fehler `ExpoSecureStore...getValueWithKeyAsync is not a function` war stale Fast-Refresh-State — nach Full-Reload weg, `createSecureStorage()` nutzt auf Web korrekt localStorage. Weiter offen (Nebenkriterien): Safari-Verifikation des Read-only-Hinweises (Code steht, visuell ungeprüft), Drag-Scroll-Rails, Vault-ZIP-Import (nur Export), WebLLM-Engine-Singleton überlebt keinen Full-Reload (Test-Flows müssen SPA-intern navigieren).
 
 ## Offene Punkte (aus PRD §9 / ARCHITECTURE §11)
 
@@ -388,7 +401,8 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 
 ## Nächste Schritte (Phase 11 — Rest & Phase 12)
 
-1. **WebLLMEngine + Web-Embeddings** (mlc/transformers.js) für volle lokale KI im Browser; dazwischen Cloud-Analyse auf Web nutzen (REST-Pfad existiert). Achtung bei Web-Schreibpfaden: drizzle-Sync hängt → Raw-Executor-Muster (`getRawDb`) verwenden.
-2. Graph mit link-haltigem Bestand verifizieren; Sidebar/Tastaturkürzel/Scroll-Rails Polish; SpeechSynthesis-TTS.
-3. **User-Verifikation gewünscht:** Import im eigenen (eingeloggten) Chrome einmal durchklicken — der Headless-Flow ist verifiziert, der reale Google-Sign-in-Pfad auf Web war es schon (Phase 1).
-4. Phase 12 (Apple TV) erst nach Web-Parität bzw. nach User-Prio; iOS-Kauf-Verifikation (10.5) weiter offen.
+1. ~~**WebLLMEngine + Web-Embeddings**~~ — **erledigt** (s. Phase-11-Abschnitt: Analyse, Embedding-Suche, Graph, TTS alle im Browser verifiziert).
+2. ~~Graph mit link-haltigem Bestand verifizieren~~ ✅; offen bleiben nur: Drag-Scroll-Rails, Vault-ZIP-Import, Safari-Sichtprüfung.
+3. **User-Aktion nötig (2026-07-22):** `http://localhost:8082` als **Authorized JavaScript Origin** im Web-OAuth-Client (GCP-Console → APIs & Services → Credentials) eintragen — Web-Login auf dem Parallel-Port scheitert sonst mit `origin_mismatch`. Console-Automation dafür blockiert (Passkey-Step-up). **Hinfällig beim Betrieb auf 8081** (dort ist die Allowlist komplett; Web-Login 2026-07-23 erneut automatisiert durchgelaufen). Offen bleibt: Read-only-Modus (kein WebGPU) einmal visuell prüfen — Code steht (`core/platform/webgpu.ts`-Gate in ModelSection + Analyse-CTA).
+4. **User-Verifikation gewünscht:** Import im eigenen (eingeloggten) Chrome einmal durchklicken — der Headless-Flow ist verifiziert, der reale Google-Sign-in-Pfad auf Web war es schon (Phase 1).
+5. Phase 12 (Apple TV) erst nach Web-Parität bzw. nach User-Prio. ~~iOS-Kauf-Verifikation (10.5)~~ — **erledigt 2026-07-22** (Test-Store-Kauf iOS + Android, s. iOS-Verifikations-Abschnitt); 10.5-Rest: Golden-Set-Benchmark (läuft), prod-Setup, RC-Webhook-Entitlement (ADR-Detail).
