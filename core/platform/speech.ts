@@ -1,8 +1,9 @@
-import * as Speech from 'expo-speech';
-
 /**
  * Speech facade (M10, phase 11): native uses expo-speech, web resolves
  * speech.web.ts (SpeechSynthesis API) instead.
+ *
+ * Lazy import: expo-speech is not linked on tvOS (phase 12), so a static
+ * import would crash the whole bundle there.
  */
 export interface SpeakOptions {
   language?: string;
@@ -13,9 +14,9 @@ export interface SpeakOptions {
 }
 
 export function speak(text: string, options: SpeakOptions): void {
-  Speech.speak(text, options);
+  void import('expo-speech').then((Speech) => Speech.speak(text, options));
 }
 
 export function stop(): void {
-  void Speech.stop();
+  void import('expo-speech').then((Speech) => Speech.stop());
 }

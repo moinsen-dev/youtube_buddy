@@ -8,6 +8,7 @@
     "@mlc-ai/web-llm": "^0.2.84",
     "@noble/hashes": "^2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
+    "@react-native-tvos/config-tv": "^0.1.6",
     "@xenova/transformers": "^2.17.2",
     "d3-force": "^3.0.0",
     "expo": "~57.0.7",
@@ -36,7 +37,7 @@
     "llama.rn": "^0.12.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.0",
+    "react-native": "npm:react-native-tvos@^0.86.0-2",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-purchases": "^10.4.4",
     "react-native-reanimated": "4.5.0",
@@ -51,6 +52,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "^0.86.1",
     "@testing-library/react-native": "^14.0.1",
     "@types/d3-force": "^3.0.10",
     "@types/jest": "^30.0.0",

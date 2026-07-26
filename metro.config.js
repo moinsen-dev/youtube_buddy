@@ -11,6 +11,15 @@ const config = getDefaultConfig(__dirname);
 
 config.resolver.assetExts.push('wasm');
 
+// Phase 12 (Apple TV): when bundling with EXPO_TV=1, resolve `.tvos.*`
+// platform files before the base files (e.g. youtube-player.tvos.tsx stubs
+// out the WebView player, which is not linked on tvOS). react-native-tvos
+// documents this exact pattern for Expo; plain builds are unaffected.
+if (process.env.EXPO_TV === '1') {
+  const sourceExts = config.resolver.sourceExts;
+  config.resolver.sourceExts = [...sourceExts.map((ext) => `tvos.${ext}`), ...sourceExts];
+}
+
 const { enhanceMiddleware } = config.server || {};
 config.server = {
   ...config.server,

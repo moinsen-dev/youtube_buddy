@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { isTV } from '@/core/platform';
+
 import { googleRefresh, googleRequestForceSsl, googleSignIn, googleSignOut } from './google';
 import { YOUTUBE_FORCE_SSL_SCOPE } from './config';
 import { clearStoredAuth, loadStoredAuth, saveStoredAuth, type StoredAuth } from './token-store';
@@ -41,6 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStored(existing);
           setStatus('signedIn');
         }
+        return;
+      }
+      // tvOS (phase 12): no native Google sign-in module — skip the silent
+      // refresh entirely (loading the JS package would throw on the missing
+      // TurboModule). TV is a consumption view and runs signed-out.
+      if (isTV) {
+        setStatus('signedOut');
         return;
       }
       const refreshed = await googleRefresh();
