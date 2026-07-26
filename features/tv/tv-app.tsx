@@ -1,11 +1,13 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/core/theme';
+import { getProSession } from '@/features/pro/pro-engine';
 
 import { Focusable } from './focusable';
 import { TVAnalysis } from './tv-analysis';
 import { TVHome } from './tv-home';
+import { TVPairing } from './tv-pairing';
 import { TVReisen } from './tv-reisen';
 import { TVReview } from './tv-review';
 import { tvType } from './tv-type';
@@ -28,13 +30,41 @@ const NAV_ITEMS: { key: TVScreen; label: string }[] = [
 export function TVApp() {
   const theme = useTheme();
   const [screen, setScreen] = useState<TVScreen>('home');
+  const [paired, setPaired] = useState<boolean | null>(null);
   const [analysisVideo, setAnalysisVideo] = useState<{ id: string; title: string | null } | null>(
     null,
   );
 
+  // Pairing gate (phase 12): without a joined sync session the TV has no
+  // data — show the pairing flow first. A restored SecureStore session with
+  // master key skips it.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const session = await getProSession();
+        const masterKey = session ? await session.getMasterKey() : null;
+        if (!cancelled) setPaired(masterKey !== null);
+      } catch {
+        if (!cancelled) setPaired(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const openVideo = useCallback((videoId: string) => {
     setAnalysisVideo({ id: videoId, title: null });
   }, []);
+
+  if (paired === false) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.colors.bgBase }]}>
+        <TVPairing onPaired={() => setPaired(true)} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bgBase }]}>

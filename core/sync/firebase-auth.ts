@@ -90,3 +90,38 @@ export async function refreshFirebaseIdentity(
     expiresAt: Date.now() + Number(data.expires_in) * 1000,
   };
 }
+
+/**
+ * Signs in with a Firebase custom token (phase 12, TV pairing): the
+ * redeemTvPairingCode function mints it for the phone's uid; the TV exchanges
+ * it here for a regular identity (incl. refresh token — afterwards the
+ * session behaves exactly like a Google sign-in).
+ */
+export async function signInWithCustomToken(
+  apiKey: string,
+  customToken: string,
+  fetchFn: FetchFn = fetch,
+): Promise<FirebaseIdentity> {
+  const response = await fetchFn(`${IDT_BASE}/accounts:signInWithCustomToken?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: customToken, returnSecureToken: true }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Firebase custom-token sign-in failed (${response.status}): ${await response.text()}`,
+    );
+  }
+  const data = (await response.json()) as {
+    idToken: string;
+    refreshToken: string;
+    expiresIn: string;
+  };
+  const claims = JSON.parse(atob(data.idToken.split('.')[1])) as { user_id: string };
+  return {
+    idToken: data.idToken,
+    refreshToken: data.refreshToken,
+    uid: claims.user_id,
+    expiresAt: Date.now() + Number(data.expiresIn) * 1000,
+  };
+}

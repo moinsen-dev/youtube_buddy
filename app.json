@@ -61,7 +61,13 @@
         }
       ],
       "llama.rn",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "YouTube Buddy braucht die Kamera, um den Pairing-Code vom Apple TV zu scannen."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import {
   refreshFirebaseIdentity,
+  signInWithCustomToken,
   signInWithGoogle,
   type FirebaseIdentity,
 } from '@/core/sync/firebase-auth';
@@ -92,6 +93,14 @@ export class ProSession {
     return this.identity.uid;
   }
 
+  /** Signs into Firebase with a custom token (phase 12, TV pairing flow). */
+  async signInWithPairingToken(customToken: string): Promise<string> {
+    this.identity = await signInWithCustomToken(this.config.apiKey, customToken, this.fetchFn);
+    await this.storage.setItem(KEYS.refreshToken, this.identity.refreshToken);
+    await this.storage.setItem(KEYS.uid, this.identity.uid);
+    return this.identity.uid;
+  }
+
   /** Restores a persisted session (null when never signed in). */
   async restore(): Promise<string | null> {
     const refreshToken = await this.storage.getItem(KEYS.refreshToken);
@@ -160,6 +169,16 @@ export class ProSession {
     if (!wrappedB64)
       throw new Error('Kein Sync-Schlüssel gefunden — Sync zuerst auf dem Hauptgerät aktivieren');
     const masterKey = await unwrapMasterKey(fromBase64(wrappedB64), recoveryCode);
+    await this.storeMasterKey(masterKey);
+  }
+
+  /**
+   * Adopts a master key received via the QR pairing channel (phase 12, TV
+   * flow): the key was sealed for this device's ephemeral key by an already
+   * paired device — no recovery code involved.
+   */
+  async adoptMasterKey(masterKey: Uint8Array): Promise<void> {
+    if (masterKey.length !== 32) throw new Error('ProSession: master key must be 32 bytes');
     await this.storeMasterKey(masterKey);
   }
 

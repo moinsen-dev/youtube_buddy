@@ -10,12 +10,18 @@ import {
   View,
 } from 'react-native';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
 import { getDb } from '@/core/db';
 import { getSetting, setSetting } from '@/core/db/repositories';
 import { useTheme } from '@/core/theme';
 import { useAuth } from '@/features/auth/auth-context';
-import { formatRecoveryCode } from '@/core/sync/crypto';
+import {
+  formatRecoveryCode,
+  generateRecoveryCode,
+  wrapMasterKey,
+  bytesToBase64,
+} from '@/core/sync/crypto';
 
 import { CLOUD_OPT_IN_KEY, getProSession } from './pro-engine';
 import {
@@ -39,6 +45,7 @@ import { fetchWrappedKey, runSync, uploadWrappedKey } from './run-sync';
  */
 export function ProSection() {
   const theme = useTheme();
+  const router = useRouter();
   const { getAccessToken } = useAuth();
   const [uid, setUid] = useState<string | null>(null);
   const [syncReady, setSyncReady] = useState(false);
@@ -172,6 +179,49 @@ export function ProSection() {
     if (db) await setSetting(db, CLOUD_OPT_IN_KEY, value ? 'true' : 'false');
   }, []);
 
+  const pairTv = useCallback(async () => {
+    setBusy('pair');
+    setError(null);
+    try {
+      const session = await getProSession();
+      if (!session) throw new Error('Erst mit Firebase verbinden');
+      const masterKey = await session.getMasterKey();
+      if (!masterKey) throw new Error('Sync auf diesem Gerät noch nicht aktiviert');
+      router.push('/tv-scanner');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(null);
+    }
+  }, [router]);
+
+  /**
+   * Re-wraps the existing master key with a NEW recovery code (the master key
+   * itself — and thus all synced data — stays untouched). Exists because the
+   * code is shown exactly once and users lose it (happened 2026-07-26).
+   */
+  const renewRecoveryCode = useCallback(async () => {
+    setBusy('renew');
+    setError(null);
+    try {
+      const session = await getProSession();
+      if (!session) throw new Error('Erst mit Firebase verbinden');
+      const masterKey = await session.getMasterKey();
+      if (!masterKey) throw new Error('Auf diesem Gerät liegt kein Master-Key');
+      const recoveryCode = generateRecoveryCode();
+      const wrapped = await wrapMasterKey(masterKey, recoveryCode);
+      await uploadWrappedKey(session, bytesToBase64(wrapped));
+      Alert.alert(
+        'Neuer Recovery-Code',
+        `${formatRecoveryCode(recoveryCode)}\n\nErsetzt den alten Code (der ist ab jetzt ungültig). Bitte diesmal notieren — nur damit kommen weitere Geräte an deine Daten.`,
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+
   const buy = useCallback(async (identifier: string) => {
     setBusy('buy');
     setError(null);
@@ -260,11 +310,29 @@ export function ProSection() {
           </Text>
 
           {syncReady ? (
-            <Button
-              label={busy === 'sync' ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
-              onPress={() => void syncNow()}
-              disabled={busy !== null}
-            />
+            <>
+              <Button
+                label={busy === 'sync' ? 'Synchronisiere…' : 'Jetzt synchronisieren'}
+                onPress={() => void syncNow()}
+                disabled={busy !== null}
+              />
+              <Button
+                label={busy === 'pair' ? 'Prüfe…' : 'Apple TV koppeln (QR)'}
+                onPress={() => void pairTv()}
+                disabled={busy !== null}
+              />
+              <Pressable
+                onPress={() => void renewRecoveryCode()}
+                disabled={busy !== null}
+                accessibilityRole="button"
+                accessibilityLabel="Recovery-Code erneuern"
+                style={{ minHeight: theme.touchTarget.default, justifyContent: 'center' }}
+              >
+                <Text style={[theme.typography.caption, { color: theme.colors.accentPrimary }]}>
+                  Recovery-Code erneuern (alter wird ungültig)
+                </Text>
+              </Pressable>
+            </>
           ) : (
             <>
               <Button

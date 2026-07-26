@@ -108,10 +108,15 @@ export function decryptPayload<T>(masterKey: Uint8Array, ciphertext: string): T 
   return JSON.parse(new TextDecoder().decode(message)) as T;
 }
 
-function toBase64(bytes: Uint8Array): string {
+/** base64 helper (sync blobs are stored as strings). */
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  return bytesToBase64(bytes);
 }
 
 function fromBase64(base64: string): Uint8Array {

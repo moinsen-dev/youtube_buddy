@@ -2,8 +2,8 @@
 
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
-**Stand:** 2026-07-24
-**Aktuelle Phase:** **Phase 12 (Apple TV) — tvOS-App gebaut & auf Simulator verifiziert ✅** (alle 4 Screens + Analyse-Leseansicht mit echten Daten; offen: Fokus-Durchnavigation per Siri Remote + Hardware-Gerät) → Details unten
+**Stand:** 2026-07-26
+**Aktuelle Phase:** **Phase 12 (Apple TV) — tvOS-App läuft auf Simulator + Hardware ✅** (alle Screens verifiziert; QR-Pairing v2 serverseitig E2E-grün, Hardware-E2E durch User ausstehend) → Details unten
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -429,3 +429,19 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 **Verifikation (2026-07-24, Apple-TV-4K-Simulator, tvOS 26.5):** Test-DB mit 252 Zeilen/18 Tabellen direkt in den App-Container geseedet (`Library/Caches/SQLite/youtube_buddy.db` — tvOS persistiert nur in Caches!): Home-Rails mit Thumbnails+Progress ✅, Flashcards-Review (1/8, Flip-Hinweis, Grade-Buttons) ✅, Reisen mit OSM-Karte+Route (Japan) ✅, Wissen mit Graph (25 Notizen/36 Links, d3-force) ✅, Analyse-Leseansicht (Triage 4/5, TL;DR, Kapitel) ✅ — Screenshots `.verification/phase12/*.png`. **Offen (ehrlich):** Fokus-**Durchnavigation** mit echter Siri Remote steht aus (Fokus-Ring rendert nachweislich, aber Remote-Input-Automation ist blockiert: osascript-TCC-Permission ging mit Session-Neustart verloren, idb key erreicht tvOS nicht); Flashcard-Bedienung End-to-End ebenso; reales Apple-TV-Hardware-Gerät ausstehend.
 
 - **tvOS-Sim-Automation (Merksätze):** Screenshots via `simctl io <udid> screenshot`; App-Start via `simctl launch` (Bundle-ID bleibt `dev.moinsen.youtubebuddy`, das `.tv`-Suffix der config-tv-Option wurde nicht übernommen); Deep-Link auf Metro 8083 via `youtubebuddy://expo-development-client/?url=…`; Tastatur als Siri-Remote funktioniert **unzuverlässig** (TCC-Permission pro Host-Prozess, geht bei Session-Neustarts verloren; idb `ui key` erreicht tvOS nicht; `idb ui describe-all` zeigt nur PineBoard/App-Top-Node) — App-Switcher-Falle: nach Wild-Input landet das TV im Switcher; für Remote-Inputs User-Klick aufs Remote-Fenster nötig. `expo run:ios --device` hängt beim Install wenn Port 8081 belegt ist → besser: `xcodebuild` direkt (inkrementell, gleiche DerivedData) + `simctl install`.
+
+## Phase 12 — Hardware & QR-Pairing (2026-07-26, Zwischenstand)
+
+**Physische Geräte:**
+
+- **Apple TV 4K (3rd gen), „AppleTV udi":** mit Xcode gekoppelt (Einstellungen → Fernbedienungen und Geräte), im Developer-Portal registriert — **Hardware-UDID `00008110-001E39D40C8A801E`** (die `1730AD91-…` aus `devicectl list` ist die CoreDevice-ID, nicht die Portal-UDID!). Debug-Build installiert via `xcodebuild -destination 'platform=tvOS,name=AppleTV udi'` + `devicectl device install app` (Signing: Team VXX45ZYNM8, Automatic).
+- **iPhone 16 Pro Max („Iphone16uds"):** App installiert (Build mit expo-camera) via `xcodebuild -destination 'platform=iOS,name=Iphone16uds'` aus dem **Haupt-Repo** (nicht Worktree!). Nach dem tvos-Swap war dort ein `pod install` nötig (stale Pods: `RCTTVColorSupport.h not found`).
+
+**QR-Pairing v2 (2026-07-26, ersetzt die 6-Char-Code-Variante v1 — UX-Entscheidung User):**
+
+- **Flow:** TV zeigt QR (`{v:1, session, pub}`) → Phone scannt (neuer Screen `app/tv-scanner.tsx`, expo-camera) → bestätigt → Phone **versiegelt den Master-Key mit dem ephemeralen TV-Public-Key** (ECIES via tweetnacl `box`, `core/sync/ecies.ts`) → `completeTvPairing` legt Chiffretext + Firebase-Custom-Token in der Session ab → TV pollt (`pollTvPairing`, 2,5 s), entsiegelt lokal, `adoptMasterKey` → erster `runSync`. **Der Server sieht nur Chiffretext (ADR bleibt); kein Recovery-Code und kein Tippen nötig.**
+- **Functions (dev deployed ✅, prod ausstehend):** `createTvPairingSession` (ungated, 10 min TTL), `completeTvPairing` (auth-gated, mintet Custom Token), `pollTvPairing` (ungated, single-use 410). `createCustomToken` brauchte `roles/iam.serviceAccountTokenCreator` auf dem Compute-SA `732512553008-compute@…` — via IAM-REST mit firebase-tools-Token gesetzt (gcloud im Reauth-Lock).
+- **Recovery-Code-Pannenset:** User hatte den Code verloren (wird nur 1× gezeigt). Neu: **„Recovery-Code erneuern"** in der Pro-Sektion — wrappt denselben Master-Key mit neuem Code (Daten unberührt, alter Code ungültig). Voraussetzung: ein Gerät mit Master-Key (iPhone-Sim 17 Pro Max, Android-Emulator).
+- **Verifikation Stand:** scripted E2E gegen dev-Functions ✅ (Session → 202 pending → complete → poll → Master-Key-Roundtrip ✓ → Custom-Token-Login ✓ → single-use 410 ✓); 130/130 Tests grün (3 neue `ecies.test.ts`). **Hardware-E2E (User) ausstehend:** ① Sim: Recovery-Code erneuern + notieren, ② echtes iPhone: Beitreten mit neuem Code, ③ TV: QR scannen mit iPhone → Sync-Pull.
+
+**Offen für Fortsetzung:** Hardware-E2E des QR-Flows (Schritte oben), Fokus-Durchnavigation per Siri Remote bestätigen, Functions v2 nach **prod** deployen (gleiche SA-Rolle dort nötig: `870515903914-compute@…`), tvOS-Icons/Top-Shelf für TestFlight (fehlen komplett), Graph-Layout-Polish (Label links abgeschnitten), Dev-Server aktuell **gestoppt** (8081/8083 — bei Bedarf neu starten: Haupt-Repo `npx expo start --port 8081`, Worktree `EXPO_TV=1 npx expo start --port 8083`).
