@@ -1,9 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { onRequest } from 'firebase-functions/v2/https';
-import { randomInt } from 'node:crypto';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { onRequest, type Request } from 'firebase-functions/v2/https';
+import { createHash, randomInt } from 'node:crypto';
 
 /**
  * Cloud analyse endpoint (ADR PRD §7.6): Gemini proxy for the Pro-Tier
@@ -24,6 +24,46 @@ const REGION = 'europe-west3';
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 initializeApp();
+
+/**
+ * Consumption guard (security review 2026-08-17). Neither endpoint has a
+ * natural cap: sign-in is open Google IdP, so any Google account reaches the
+ * Gemini proxy, and the pairing opener is ungated by design. One counter doc
+ * per subject and fixed window; the doc cleans itself up via the Firestore
+ * TTL policy on `expiresAt` (collection group `rateLimits`).
+ */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+/** Generous for a real Pro user, cheap for us, useless for an abuser. */
+const ANALYZE_DAILY_LIMIT = 200;
+const PAIRING_HOURLY_LIMIT = 30;
+
+async function withinQuota(subject: string, limit: number, windowMs: number): Promise<boolean> {
+  const db = getFirestore();
+  const bucket = Math.floor(Date.now() / windowMs);
+  const ref = db.doc(`rateLimits/${subject}_${bucket}`);
+  return db.runTransaction(async (tx) => {
+    const count = ((await tx.get(ref)).data()?.count as number | undefined) ?? 0;
+    if (count >= limit) return false;
+    tx.set(ref, {
+      count: count + 1,
+      expiresAt: Timestamp.fromMillis(Date.now() + windowMs * 2),
+    });
+    return true;
+  });
+}
+
+/** Hashed: the counter must not become a log of raw client IPs. */
+function clientKey(request: Request): string {
+  const forwarded = String(request.headers['x-forwarded-for'] ?? '')
+    .split(',')[0]
+    .trim();
+  return createHash('sha256')
+    .update(forwarded || request.ip || 'unknown')
+    .digest('hex')
+    .slice(0, 32);
+}
 
 interface AnalyzeBody {
   system: string;
@@ -46,8 +86,9 @@ export const analyze = onRequest(
       response.status(401).json({ error: 'missing bearer token' });
       return;
     }
+    let uid: string;
     try {
-      await getAuth().verifyIdToken(idToken);
+      uid = (await getAuth().verifyIdToken(idToken)).uid;
     } catch {
       response.status(401).json({ error: 'invalid token' });
       return;
@@ -61,6 +102,11 @@ export const analyze = onRequest(
       body.schema === null
     ) {
       response.status(400).json({ error: 'body must be { system, prompt, schema }' });
+      return;
+    }
+    // After validation: a malformed request must not cost the caller quota.
+    if (!(await withinQuota(`analyze_${uid}`, ANALYZE_DAILY_LIMIT, DAY_MS))) {
+      response.status(429).json({ error: 'daily analyse quota exhausted' });
       return;
     }
 
@@ -141,16 +187,23 @@ export const createTvPairingSession = onRequest(
       response.status(400).json({ error: 'body must be { publicKey }' });
       return;
     }
+    // Ungated write path — without this an anonymous caller could grow the
+    // collection (and the bill) at will.
+    if (!(await withinQuota(`pairing_${clientKey(request)}`, PAIRING_HOURLY_LIMIT, HOUR_MS))) {
+      response.status(429).json({ error: 'too many pairing attempts' });
+      return;
+    }
     const sessionId = generateSessionId();
+    const expiresAt = Date.now() + PAIRING_TTL_MS;
     await getFirestore()
       .doc(`tvPairingSessions/${sessionId}`)
       .set({
         publicKey,
         createdAt: Date.now(),
-        expiresAt: Date.now() + PAIRING_TTL_MS,
+        expiresAt: Timestamp.fromMillis(expiresAt),
         status: 'pending',
       });
-    response.status(200).json({ sessionId, expiresAt: Date.now() + PAIRING_TTL_MS });
+    response.status(200).json({ sessionId, expiresAt });
   },
 );
 
@@ -185,7 +238,12 @@ export const completeTvPairing = onRequest(
     const ref = getFirestore().doc(`tvPairingSessions/${sessionId}`);
     const snap = await ref.get();
     const data = snap.data();
-    if (!snap.exists || !data || data.status !== 'pending' || data.expiresAt < Date.now()) {
+    if (
+      !snap.exists ||
+      !data ||
+      data.status !== 'pending' ||
+      (data.expiresAt as Timestamp).toMillis() < Date.now()
+    ) {
       response.status(404).json({ error: 'session invalid or expired' });
       return;
     }
@@ -218,7 +276,7 @@ export const pollTvPairing = onRequest(
     const ref = getFirestore().doc(`tvPairingSessions/${sessionId}`);
     const snap = await ref.get();
     const data = snap.data();
-    if (!snap.exists || !data || data.expiresAt < Date.now()) {
+    if (!snap.exists || !data || (data.expiresAt as Timestamp).toMillis() < Date.now()) {
       response.status(404).json({ error: 'session invalid or expired' });
       return;
     }
