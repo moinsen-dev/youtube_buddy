@@ -1,4 +1,3 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { sealMasterKey } from '@/core/sync/ecies';
 import { useTheme } from '@/core/theme';
 import { getProSession } from '@/features/pro/pro-engine';
+import { QrCamera, useCameraPermissions } from '@/features/pro/qr-camera';
 import { completeTvPairing } from '@/features/pro/tv-pairing';
 
 interface PairingPayload {
@@ -94,12 +94,7 @@ export default function TvScannerScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.bgBase }]}>
       {!payload && !done && (
         <>
-          <CameraView
-            style={styles.camera}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-            onBarcodeScanned={onScanned}
-          />
+          <QrCamera onScanned={onScanned} />
           <Text style={[theme.typography.body, styles.hint, { color: theme.colors.textSecondary }]}>
             QR-Code auf dem TV-Bildschirm scannen
           </Text>
@@ -187,7 +182,6 @@ export default function TvScannerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 20, padding: 24 },
-  camera: { flex: 1 },
   hint: { textAlign: 'center', padding: 16, maxWidth: 420 },
   error: { textAlign: 'center', padding: 16 },
   button: { paddingHorizontal: 32, paddingVertical: 16 },
