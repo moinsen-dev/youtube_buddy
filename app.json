@@ -51,7 +51,12 @@
           "iosUrlScheme": "com.googleusercontent.apps.870515903914-8vk5cfiql8nl5imt2g6r3es35s5hrgj7"
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -65,7 +70,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "YouTube Buddy braucht die Kamera, um den Pairing-Code vom Apple TV zu scannen."
+          "cameraPermission": "YouTube Buddy braucht die Kamera, um den Pairing-Code vom Apple TV zu scannen.",
+          "microphonePermission": false
         }
       ]
     ],
