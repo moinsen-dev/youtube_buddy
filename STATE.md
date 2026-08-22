@@ -2,8 +2,8 @@
 
 Fortlaufender Arbeitsstand. **Pflege-Regel:** Nach jeder Arbeitseinheit aktualisieren (Datum, was fertig wurde, was als Nächstes ansteht, neue Entscheidungen/offene Punkte).
 
-**Stand:** 2026-07-26
-**Aktuelle Phase:** **Phase 12 (Apple TV) — tvOS-App läuft auf Simulator + Hardware ✅** (alle Screens verifiziert; QR-Pairing v2 serverseitig E2E-grün, Hardware-E2E durch User ausstehend) → Details unten
+**Stand:** 2026-08-22
+**Aktuelle Phase:** **Release-Vorbereitung (Stufe 1: Eigenbedarf)** — alle 12 Roadmap-Phasen gebaut; der Engpass ist nicht mehr Funktionsumfang, sondern dass die App nie einen Simulator verlassen hat. Phase 12 (Apple TV) inhaltlich ✅, Hardware-E2E durch User weiter ausstehend → Details unten
 **Pro-Tier (Paid):** per ADR beschlossen (PRD §7.6): E2E-Sync via **Firebase** (gleiches GCP-Projekt) + Cloud-Analyse via **Firebase AI / Gemini** (Opt-in), RevenueCat — Umsetzung als **Phase 10.5**
 **Tooling-Update (2026-07-20):** 46 projektlokale Skills installiert (`.agents/skills/` + `skills-lock.json` im Repo): RevenueCat-Toolkit (`rc-*`, `revenuecat-*`), Firebase-Workflows, Moinsen-Stacks — `.claude/` ist gitignored (Symlink-Cache, wird aus dem Lockfile neu gebaut). **Neustart von kimi-code nötig, damit die Skills geladen werden.**
 **Repo:** `moinsen-dev/youtube_buddy` (GitHub) · Branch: `develop` · Bundle ID: `dev.moinsen.youtubebuddy` · EAS: `@moinsen_dev/youtube-buddy` (verlinkt, `projectId` in `app.json`)
@@ -454,7 +454,7 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 - **Gehärtet** (`functions/src/index.ts`): gemeinsamer Transaktionszähler `withinQuota` in `rateLimits/` — **200 analyze-Calls/uid/Tag** (offener Google-IdP-Login = jeder Google-Account erreicht sonst ungebremst Vertex) und **30/h pro IP-Hash** auf dem ungateten `createTvPairingSession` (vorher unbegrenzte anonyme Firestore-Writes). IP wird nur gehasht gespeichert.
 - **`tvPairingSessions.expiresAt` ist jetzt `Timestamp`** (statt Zahl; Vergleiche via `.toMillis()`) — mit **TTL-Policy** auf beiden Projekten, ebenso auf `rateLimits`. Vorher lagen konsumierte Sessions samt gemintetem Custom-Token unbegrenzt herum. Wire-Format zum TV unverändert (Response-`expiresAt` bleibt millis).
 - **Budget-Alerts:** 25 EUR bei 50/90/100 % auf beiden Billing-Accounts (prod `01A911-…`, dev `015C39-…` — bewusst getrennt?).
-- **Verifiziert auf dev:** 30× `200` → `429` am Pairing-Opener, `expiresAt` als `timestampValue`, Poll 202 / bogus 404, `analyze` 401. **Prod-Deploy steht aus** — dort läuft nur `analyze` (Stand 2026-07-24); ein Deploy bringt erstmals auch die drei TV-Pairing-Functions nach prod und braucht vorher `roles/iam.serviceAccountTokenCreator` auf `870515903914-compute@…`.
+- **Verifiziert auf dev:** 30× `200` → `429` am Pairing-Opener, `expiresAt` als `timestampValue`, Poll 202 / bogus 404, `analyze` 401. **Prod-Deploy erfolgt (2026-08-18, durch User ausgelöst — der Permission-Classifier blockte ihn bei mir zweimal):** nur `functions:analyze`, verifiziert mit 401 ohne Token. Die drei TV-Pairing-Functions antworten in prod weiter mit 404, sind also bewusst **nicht** mitgezogen; ein späterer Deploy braucht dort vorher `roles/iam.serviceAccountTokenCreator` auf `870515903914-compute@…`.
 
 **TV-Konsolidierung (2026-08-18): der Worktree `youtube_buddy_tv` enthält keine eigene Logik.** Inhaltlicher Vergleich jeder Datei gegen develop: `features/tv/*`, `ecies.ts`, `tv-pairing.ts`, `youtube-player.tvos.tsx` sind **byte-identisch**; die fünf „unterschiedlichen" Dateien (`firebase-auth.ts`, `pro-section.tsx`, `ecies.test.ts`, `tv-scanner.tsx`, `tv-pairing.tsx`) unterscheiden sich **nur durch Prettier-Umbrüche**. Sein einziger Zweck waren zwei Config-Artefakte. `ios/`/`android/` sind gitignored (CNG) — es gab nie einen Git-Grund für die Trennung, nur den, Phone- und TV-Nativeprojekt gleichzeitig gebaut zu halten.
 
@@ -463,3 +463,28 @@ Aufbau: Expo **SDK 57**, React Native 0.86, TypeScript strict, Expo Router (type
 - **Gelernt: Route-Dateien lassen sich NICHT plattformweise tauschen.** expo-router zählt sie per `require.context` über Dateinamen auf; Metros `.tvos.*`-`sourceExts` greifen dort nicht. Ein `app/tv-scanner.tvos.tsx` wird eine _zusätzliche_ Route (Modulzahl 1852 → 1853, mit geleertem Cache verifiziert). Der Tausch funktioniert nur für normale Module — deshalb der Umweg über `features/`.
 - **Verifikationsstand:** tvOS-Bundle lädt mit **1846 Modulen fehlerfrei**, kein Crash-Report (weder Simulator noch Host), Syslog zeigt geordnete Beendigung (`isUserKill:0`, Übergang nach HeadBoard) — **nicht** die in Phase 12 dokumentierte nil-Insertion in `RCTThirdPartyComponentsProvider`. **Offen:** ein gerendeter TV-Screen ist noch nicht fotografiert — die App geht am Simulator ~10 s nach Start kommentarlos zum Homescreen zurück. Ob das ein Artefakt des simctl-/Deep-Link-Antriebs ohne echte Focus-Session ist, ist ungeklärt. Der Worktree steht deshalb noch; er ist jederzeit entbehrlich (Backup der zwei Config-Dateien im Session-Scratchpad).
 - Neue Scripts: `npm run tv` (Metro), `npm run tv:prebuild` / `npm run ios:prebuild` (Flavor-Wechsel — das native Projekt ist immer nur _eines_ von beiden).
+
+---
+
+**Release-Vorbereitung (2026-08-22) — der eigentliche Engpass war nie der Funktionsumfang.** Zwölf Phasen gebaut, aber **keine `eas.json` und null Builds**: die App existierte nur auf Simulatoren und dem, was `expo run:ios` lokal draufschiebt. Alles andere (Icons, Store-Keys, Verifizierung) ist Feinschliff daneben. PRD §7.1 nennt als realistische v1-Zielgruppe ohnehin „persönlicher Gebrauch + kleine Tester-Gruppe", und der OAuth-Test-Modus deckt bis 100 Nutzer — für den Eigenbedarf blockiert **nichts** außer dem fehlenden Build.
+
+**Drei Stufen (Arbeit vs. Wartezeit getrennt):**
+
+1. **Eigenbedarf** — `eas.json` + iOS-Build + TestFlight. Arbeit ~20-30 Min, blockiert nur noch durch einen interaktiven Credential-Lauf (unten).
+2. **Kleiner Kreis** — Tester in die OAuth-Consent-Liste (≤100), TestFlight-Gruppe, **tvOS-Icons + Top-Shelf** (fehlen komplett, ohne sie kein TV-TestFlight). Der offene Hardware-E2E des QR-Flows erledigt sich hier von selbst.
+3. **Verkaufen** — langer Pol ist die **Google-OAuth-Verifizierung** für die sensitiven Scopes (`youtube.readonly`/`force-ssl`): Demo-Video + Datenschutzerklärung, Wochen externe Wartezeit. **Wenn Verkaufen je das Ziel ist, diese Uhr sofort und parallel starten** — der Rest ist Minutenarbeit, die jederzeit nachkommt. Dazu echte RevenueCat-Store-Keys statt des Test-Store-Defaults in `app.config.ts:52`.
+
+**Gebaut (Commits `1868fb9`, `0c2d9f4`):**
+
+- **`eas.json`** mit vier Profilen: `development` (Dev-Client), `preview` (interne Distribution), `production` (TestFlight), `production-tv` — dort lebt jetzt `EXPO_TV=1`, seit der TV-Worktree eingefaltet ist. `production-tv` ist **unverifiziert**: ohne tvOS-Icons besteht ein TV-Build keine Store-Validierung.
+- **`EXPO_PUBLIC_ENV` ist pro Profil gepinnt.** Ohne das hätte ein Production-Build still gegen das **Dev**-Firebase-Projekt gezeigt, weil `app.config.ts:15` auf `development` defaultet. Nur drei Env-Vars zählen zur Build-Zeit (`EXPO_PUBLIC_ENV`, `REVENUECAT_IOS_KEY`, `REVENUECAT_ANDROID_KEY`); die GROQ-Keys aus `.env` benutzt der App-Code nirgends.
+- **Mikrofon- und Face-ID-Berechtigung entfernt.** Beide kamen als englische Plugin-Defaults (expo-camera, expo-secure-store) und werden nachweislich nie benutzt — `core/platform/speech.ts` ist reines Text-to-Speech, null Treffer für Recording/`expo-av`/`expo-audio`/`LocalAuthentication`. `false` löscht den Schlüssel wirklich (`@expo/config-plugins/build/ios/Permissions.js:28-30`), am neu generierten Info.plist verifiziert: übrig bleibt nur die (schon deutsche) Kamera-Begründung.
+
+**Blockiert — beides braucht den User:**
+
+1. **Ein interaktiver Build-Lauf.** `npx eas-cli build --platform ios --profile production` lief sauber bis in den Credential-Store (Environment aufgelöst, `buildNumber 1` initialisiert) und brach ab mit _„Distribution Certificate is not validated for non-interactive builds"_. EAS legt kein Distributionszertifikat unbeaufsichtigt an. Einmalvorgang — danach liegen die Credentials auf dem EAS-Server und alle weiteren Builds laufen ohne Zutun. Zugangsdaten stehen bereit und funktionieren: **ASC-Key `T5YN77H557`, Issuer `c0bb7229-665d-4a81-b334-7fbac6224ca2`, Team `VXX45ZYNM8`**, Key-Datei `~/private_keys/AuthKey_T5YN77H557.p8` (per `EXPO_ASC_API_KEY_PATH`/`EXPO_ASC_KEY_ID`/`EXPO_ASC_ISSUER_ID`/`EXPO_APPLE_TEAM_ID`).
+2. **`ITSAppUsesNonExemptEncryption` fehlt** (von EAS selbst angemahnt) — ohne den Schlüssel ist die Export-Compliance bei _jedem_ TestFlight-Upload von Hand zu beantworten. Bewusst **nicht** von mir auf `false` gesetzt: die App verschlüsselt Nutzerdaten echt Ende-zu-Ende (tweetnacl, `core/sync/ecies.ts`, Master-Key-Wrapping), nicht nur Transport über HTTPS. Ob die Standard-Ausnahme greift, ist eine Compliance-Aussage gegenüber Apple und gehört dem User.
+
+**Nächster Schritt:** den interaktiven `eas build`-Lauf durchführen und Distribution Certificate + Provisioning Profile bestätigen. Erfolgskriterium: ein iOS-Artefakt in `eas build:list`. Der App-Store-Connect-Record wird erst beim `eas submit` fällig, nicht beim Build.
+
+**Weiter offen aus früheren Einheiten:** Worktree `youtube_buddy_tv` abräumen (inhaltlich nachweislich leer, es fehlt nur das Bild einer gerenderten TV-Oberfläche); tvOS-Icons/Top-Shelf; Hardware-E2E des QR-Flows; Siri-Remote-Fokusdurchlauf; serverseitige Entitlement-Prüfung (heute prüft nur der Client — jeder Google-Account bekommt 200 Gemini-Calls/Tag geschenkt, ab Stufe 3 ein Geschäftsmodell-Loch).
